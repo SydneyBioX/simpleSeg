@@ -88,3 +88,54 @@ simpleSeg <- function(image,
     
     
 }
+
+cytSeg <- function(nmask,
+                           image,
+                           size_selection = 5,
+                           smooth = 1,
+                           tolerance = 0.01
+){
+    
+    
+    kern = makeBrush(3, shape='disc')
+    
+    cell = dilate(nmask, kern)
+    
+    
+    disk = cell - nmask > 0
+    
+    
+    
+    longImage_disk <- data.frame(apply(asinh(image),3, as.vector), disk = as.vector(disk))
+    #longImage_background <- data.frame(apply(asinh(background),3, as.vector), disk = FALSE)
+    #long_Image_all_disk <- longImage_disk %>% dplyr::filter(disk == TRUE)
+    #long_Image_all_disk <- as.data.frame(long_Image_all_disk)
+    
+    
+    #long_image_2 <- rbind(long_Image_all_disk, longImage_background)
+    long_image_2 <- longImage_disk
+    
+    fit <- lm(disk ~ .-disk, data = long_image_2)
+    
+    cytpred <- nmask
+    cytpred[] <- predict(fit, longImage_disk)
+    cytpred <- cytpred - min(cytpred)
+    cytpred <- cytpred/max(cytpred)
+    
+    cellTh <- otsu(cytpred,range = c(0,1))
+    cell <- cytpred > cellTh
+    
+    cell <- cell + nmask > 0
+    
+    nuc_label <- bwlabel(nmask) 
+    tnuc <- table(nuc_label)
+    nmask[nuc_label%in%names(which(tnuc<=size_selection))] <- 0
+    
+    
+    cmask4 <- propagate(cytpred, nmask, cell)
+    justdisk <- propagate(disk, nmask, cell)
+    
+    #output<-list(cmask4,cmaskdisk, cell1, disk, justdisk)
+    return(cmask4)
+    
+}
