@@ -108,11 +108,12 @@ cytSeg <- function(nmask,
                            image,
                            size_selection = 5,
                            smooth = 1,
-                           tolerance = 0.01
+                           tolerance = 0.01,
+                   kernSize = 3
 ){
     
     
-    kern = makeBrush(3, shape='disc')
+    kern = makeBrush(kernSize, shape='disc')
     
     cell = dilate(nmask, kern)
     
