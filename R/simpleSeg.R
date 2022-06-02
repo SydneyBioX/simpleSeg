@@ -83,10 +83,25 @@ simpleSeg <- function(image,
     cell1 = dilate(nmask1, kern)
     disk1 = cell1-nmask1 >0
     disk1 <- watershed(disk1)
-    output<-list(nmask1,nuc1, disk_blur, disk1, cell1)
-    return(output)
+    if(whole_cell){
+        return(cell1)
+    }
+    else{
+        return(nmask1)
+    }
     
     
+}
+simpleSegParalell <- function(image,
+                              nucleus_index = 1,
+                              size_selection = 10,
+                              smooth = 1,
+                              tolerance = 0.01,
+                              ext = 1,
+                              whole_cell = TRUE,
+                              cores = 50){
+    output <- BiocParallel::bplapply(image, simpleSeg, nucleus_index = nucleus_index, tolerance = tolerance,  size_selection = size_selection, smooth = smooth, whole_cell = whole_cell,
+                                       BPPARAM  = BiocParallel::MulticoreParam(workers = cores))
 }
 
 cytSeg <- function(nmask,
