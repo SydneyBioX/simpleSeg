@@ -155,3 +155,12 @@ cytSeg <- function(nmask,
     return(cmask4)
     
 }
+cytSegParalell <- function(nmask,
+                           image,
+                           size_selection = 5,
+                           smooth = 1,
+                           tolerance = 0.01,
+                           kernSize = 3,
+                           cores = 50){
+    test.masks.cyt <- mcmapply(cytSeg, nmask, image, size_selection, mc.cores = 40)
+}
