@@ -168,8 +168,23 @@ cytSegParalell <- function(nmask,
 
 normalize.cells <- function(cells,
                             markers,
+                            isSCE = FALSE,
+                            assayName = NULL,
                             transformation = NULL,
                             method = NULL){
+    
+    #handeling sce and se
+    if (isSCE == TRUE){
+        if (is.null(assayName)){
+            cellsdf <- data.frame(t(assay(cells)))
+        }
+        else{
+            cellsdf <- data.frame(t(cells@assays@data@listData[[assayName]]))
+        }
+        cellsdf$imageID <- cells@colData@listData[["ImageNb"]]
+        cells <- cellsdf
+    }
+    
     #Transformations
     if (transformation == "asinh"){
         cells[,markers] <- asinh(cells[,markers])
