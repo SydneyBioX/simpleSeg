@@ -13,28 +13,58 @@
 #' @rdname simpleSeg
 #' @importFrom BiocParallel SerialParam bplapply
 
+autosmooth <- function(channel, smooth, threshold, adjustment){
+    signal <- mean(channel[,,9])
+    noise <- sd(channel[,,9])
+    SNR<-10*log10(signal/noise)
+    if (abs(SNR) > threshold){
+        smooth <- smooth + adjustment
+        return(smooth)
+    }
+    else{
+        return(smooth)
+    }
+}
+
 simpleSeg <- function(image,
                           nucleus_index = 1,
                           size_selection = 10,
                           smooth = 1,
+                          norm99 = TRUE,
+                          maxThresh = TRUE,
+                          autosmooth = TRUE,
                           tolerance = 0.01,
-                          ext = 1){
+                          ext = 1,
+                          whole_cell = TRUE){
     
     
     
     nuc <- image[,,nucleus_index]
     
+    if (autosmooth){
+        smooth <- autosmooth(image, smooth, 9, 4) # adjusting the smoothing parameter for low intensity images
+    }
+    
+    
     # Hotspot filtering. Intensities greater than the 99 percentile are changed to be exactly the 99th percentile intensity. This has the effect of removing outliers.
-    nuc[nuc > quantile(nuc, 0.99,na.rm = TRUE)] <- quantile(nuc,
-                                                            0.99,
-                                                            na.rm = TRUE)
-    nuc <- nuc/max(nuc,na.rm = TRUE)
+    
+    if (norm99){
+        nuc[nuc > quantile(nuc, 0.99,na.rm = TRUE)] <- quantile(nuc,
+                                                                0.99,
+                                                                na.rm = TRUE)
+    }
+    if (maxThresh){
+        nuc <- nuc/max(nuc,na.rm = TRUE)
+    }
+    
     
     nuc1 <- nuc
     nuc1[is.na(nuc)] <- 0
     
+    
     nuc1 <- gblur(sqrt(nuc1),
                   smooth)
+    
     
     
     # Otsu thresholding. 
@@ -83,6 +113,8 @@ simpleSeg <- function(image,
     cell1 = dilate(nmask1, kern)
     disk1 = cell1-nmask1 >0
     disk1 <- watershed(disk1)
+    #output<-list(nmask1,nuc1, disk_blur, disk1, cell1)
+    #return(output)
     if(whole_cell){
         return(cell1)
     }
@@ -170,6 +202,7 @@ normalize.cells <- function(cells,
                             markers,
                             isSCE = FALSE,
                             assayName = NULL,
+                            imageNb = NULL, #requires the image numbering varlable from sce list data to stratify the cells on
                             transformation = NULL,
                             method = NULL){
     
@@ -181,7 +214,7 @@ normalize.cells <- function(cells,
         else{
             cellsdf <- data.frame(t(cells@assays@data@listData[[assayName]]))
         }
-        cellsdf$imageID <- cells@colData@listData[["ImageNb"]]
+        cellsdf$imageID <- cells@colData@listData[[imageNb]]
         cells <- cellsdf
     }
     
