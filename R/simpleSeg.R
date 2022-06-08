@@ -136,21 +136,41 @@ simpleSegParalell <- function(image,
                                        BPPARAM  = BiocParallel::MulticoreParam(workers = cores))
 }
 
+## cytoplasm segmentation based on markers found in the nuclei disk
+
 cytSeg <- function(nmask,
-                           image,
-                           size_selection = 5,
-                           smooth = 1,
-                           tolerance = 0.01,
-                   kernSize = 3
-){
+                   image,
+                   kern_size = 3,
+                   size_selection = 5,
+                   smooth = 1,
+                   minMax = FALSE,
+                   asin = FALSE){
     
     
-    kern = makeBrush(kernSize, shape='disc')
+    kern = makeBrush(kern_size, shape='disc')
     
     cell = dilate(nmask, kern)
     
     
     disk = cell - nmask > 0
+    
+    #normalization
+    image1 <- image
+    test <- NULL
+    
+    if (minMax){
+        for (i in 1:dim(image)[3]){
+            image[,,i] <- image[,,i]/max(image[,,i])
+        }
+    }
+    
+    
+    if (asin){
+        image <- asinh(image)
+    }
+    if (is.null(smooth) == FALSE){
+        image <- gblur(image, sigma = smooth)
+    }
     
     
     
@@ -187,6 +207,7 @@ cytSeg <- function(nmask,
     return(cmask4)
     
 }
+
 cytSegParalell <- function(nmask,
                            image,
                            size_selection = 5,
@@ -195,6 +216,52 @@ cytSegParalell <- function(nmask,
                            kernSize = 3,
                            cores = 50){
     test.masks.cyt <- mcmapply(cytSeg, nmask, image, size_selection, mc.cores = 40)
+}
+
+
+## Cyt segmentation based on a specified cytoplasmic marker ##
+
+CytSeg2 <- function(image,
+                    channel,
+                    nmask,
+                    size_selection = 5,
+                    smooth = 1, #does not appear to do anything here
+                    minMax = FALSE,
+                    asin = FALSE){
+    CD44 <- asinh(image[,,channel])/asinh(max(image[,,channel])) #CD44 is the target protein for this channel
+    
+    if (minMax){
+        CD44 <- CD44/max(CD44)
+    }
+    
+    
+    if (asin){
+        CD44 <- asinh(CD44)
+    }
+    
+    
+    CD44smooth <- gblur(CD44, sigma = smooth)
+    
+    
+    longImage <- data.frame(apply(asinh(image),3, as.vector), CD44smooth = as.vector(CD44smooth))
+    fit <- lm(CD44smooth ~ ., longImage) #using all the other variables (staining channels) to predict CD44
+    
+    CD44pred <- CD44
+    CD44pred[] <- terra::predict(fit, longImage)
+    CD44pred <- CD44pred - min(CD44pred)
+    CD44pred <- CD44pred/max(CD44pred)
+    
+    cellTh <- otsu(CD44pred,range = c(0,1))
+    cell <- CD44pred > cellTh
+    
+    cell <- cell + nmask > 0
+    
+    nuc_label <- bwlabel(nmask) 
+    tnuc <- table(nuc_label)
+    nmask[nuc_label%in%names(which(tnuc<=size_selection))] <- 0
+    
+    
+    cmask4 <- propagate(CD44pred, nmask, cell)
 }
 
 
