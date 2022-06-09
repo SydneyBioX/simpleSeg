@@ -26,7 +26,7 @@ autosmooth <- function(channel, smooth, threshold, adjustment){
     }
 }
 
-simpleSeg <- function(image,
+nucSeg <- function(image,
                           nucleus_index = 1,
                           size_selection = 10,
                           smooth = 1,
@@ -35,6 +35,7 @@ simpleSeg <- function(image,
                           autosmooth = TRUE,
                           tolerance = 0.01,
                           ext = 1,
+                          kernSize = 3,
                           whole_cell = TRUE){
     
     
@@ -109,7 +110,7 @@ simpleSeg <- function(image,
     #nMaskLabel <- bwlabel(nmask1) 
     #nMaskLabel <- colorLabels(nmask1) 
     #display(nMaskLabel)
-    kern = makeBrush(3, shape='disc')
+    kern = makeBrush(kernSize, shape='disc')
     cell1 = dilate(nmask1, kern)
     disk1 = cell1-nmask1 >0
     disk1 <- watershed(disk1)
@@ -124,30 +125,34 @@ simpleSeg <- function(image,
     
     
 }
-simpleSegParalell <- function(image,
-                              nucleus_index = 1,
-                              size_selection = 10,
-                              smooth = 1,
-                              tolerance = 0.01,
-                              ext = 1,
-                              whole_cell = TRUE,
-                              cores = 50){
-    output <- BiocParallel::bplapply(image, simpleSeg, nucleus_index = nucleus_index, tolerance = tolerance,  size_selection = size_selection, smooth = smooth, whole_cell = whole_cell,
-                                       BPPARAM  = BiocParallel::MulticoreParam(workers = cores))
+nucSegParalell <- function(image,
+                           nucleus_index = 1,
+                           size_selection = 10,
+                           smooth = 1,
+                           norm99 = TRUE,
+                           maxThresh = TRUE,
+                           autosmooth = TRUE,
+                           tolerance = 0.01,
+                           ext = 1,
+                           kernSize = 3,
+                           whole_cell = TRUE,
+                           cores = 50){
+    output <- BiocParallel::bplapply(image, nucSeg, nucleus_index = nucleus_index, tolerance = tolerance, ext = ext, kernSize = kernSize, size_selection = size_selection, smooth = smooth, norm99 = norm99,maxThresh = maxThresh, autosmooth = autosmooth,  whole_cell = whole_cell,
+                                     BPPARAM  = BiocParallel::MulticoreParam(workers = cores))
 }
 
 ## cytoplasm segmentation based on markers found in the nuclei disk
 
-cytSeg <- function(nmask,
+CytSeg <- function(nmask,
                    image,
-                   kern_size = 3,
                    size_selection = 5,
-                   smooth = 1,
+                   smooth = 1,#Does not appear to do anything here
+                   kernSize = 3,
                    minMax = FALSE,
                    asin = FALSE){
     
     
-    kern = makeBrush(kern_size, shape='disc')
+    kern = makeBrush(kernSize, shape='disc')
     
     cell = dilate(nmask, kern)
     
@@ -212,18 +217,19 @@ cytSegParalell <- function(nmask,
                            image,
                            size_selection = 5,
                            smooth = 1,
-                           tolerance = 0.01,
                            kernSize = 3,
+                           minMax = FALSE,
+                           asin = FALSE,
                            cores = 50){
-    test.masks.cyt <- mcmapply(cytSeg, nmask, image, size_selection, mc.cores = 40)
+    test.masks.cyt <- mcmapply(CytSeg, nmask, image, size_selection = size_selection, smooth = smooth, kernSize = kernSize, minMax = minMax, asin = asin, mc.cores = cores)
 }
 
 
 ## Cyt segmentation based on a specified cytoplasmic marker ##
 
-CytSeg2 <- function(image,
-                    channel,
-                    nmask,
+CytSeg2 <- function(nmask,
+                    image,
+                    channel = 2,
                     size_selection = 5,
                     smooth = 1, #does not appear to do anything here
                     minMax = FALSE,
@@ -262,7 +268,108 @@ CytSeg2 <- function(image,
     
     
     cmask4 <- propagate(CD44pred, nmask, cell)
+    
+    return(cmask4)
 }
+
+
+
+cytSeg2Paralell <- function(nmask,
+                            image,
+                            channel = 2,
+                            size_selection = 5,
+                            smooth = 1,
+                            minMax = FALSE,
+                            asin = FALSE,
+                            cores = 50){
+    test.masks.cyt <- mcmapply(CytSeg2, nmask, image, channel = channel, size_selection = size_selection, smooth = smooth,  mc.cores = 40)
+}
+
+
+### Simple seg
+simpleSeg <- function(#nmask parameters
+    image,
+    cytIdentification = "dilate",
+    nucleus_index = 1,
+    size_selectionNuc = 10,
+    smooth = 1,
+    norm99 = TRUE,
+    maxThresh = TRUE,
+    autosmooth = TRUE,
+    tolerance = 0.01,
+    ext = 1,
+    kernSize = 3,
+    
+    #cyt1 parameters
+    #nmask,
+    
+    size_selectionCyt = 5,
+    minMax = FALSE,
+    asin = FALSE,
+    
+    #cyt2 parameters
+    #nmask,
+    cyt_index=2,
+    
+    cores = 50
+){
+    # do nmask (if cytIdentification is null return nuc mask)
+    whole_cell = FALSE
+    if (cytIdentification == "dilate"){
+        whole_cell = TRUE
+    }
+    
+    nmask <- nucSegParalell( image,
+                             nucleus_index = nucleus_index,
+                             size_selection = size_selectionNuc,
+                             smooth = smooth,
+                             norm99 = norm99,
+                             maxThresh = maxThresh,
+                             autosmooth = autosmooth,
+                             tolerance = tolerance,
+                             ext = ext,
+                             whole_cell = whole_cell,
+                             kernSize = kernSize,
+                             cores = cores)
+    
+    #if dilate
+    if (cytIdentification == "dilate"){
+        return(nmask)
+    }
+    
+    if (cytIdentification == "diskModel"){
+        
+        cells <- cytSegParalell (nmask,
+                                 image,
+                                 size_selection = size_selectionCyt,
+                                 smooth = smooth,
+                                 kernSize = kernSize,
+                                 minMax = minMax,
+                                 asin = asin,
+                                 cores = cores)
+        
+        return(cells)
+    }
+    
+    #if marker
+    else if (cytIdentification == "markerModel"){
+        
+        cells <- cytSeg2Paralell(nmask,
+                                 image,
+                                 channel = cyt_index,
+                                 size_selection = size_selectionCyt,
+                                 smooth = smooth,
+                                 minMax = minMax,
+                                 asin = asin,
+                                 cores = cores)
+        
+        return(CytoImageList(cells))
+    }
+}
+
+
+
+
 
 
 normalize.cells <- function(cells,
@@ -356,4 +463,86 @@ normalize.cells <- function(cells,
         cells[, markers] <- dat_norm
     }
     return(cells)
+}
+
+
+
+simpleSeg <- function(#nmask parameters
+    image,
+    cytIdentification = "dilate",
+    nucleus_index = 1,
+    size_selection = 10,
+    smooth = 1,
+    norm99 = TRUE,
+    maxThresh = TRUE,
+    autosmooth = TRUE,
+    tolerance = 0.01,
+    ext = 1,
+    whole_cell = TRUE,
+    
+    #cyt1 parameters
+    #nmask,
+    
+    size_selection = 5,
+    minMax = FALSE,
+    asin = FALSE,
+    ext = 2,
+    
+    #cyt2 parameters
+    #nmask,
+    channel,
+    
+    cores = 50
+){
+    # do nmask (if cytIdentification is null return nuc mask)
+    
+    if (cytIdentification == "dilate"){
+        whole_cell = TRUE
+    }
+    
+    nmask <- nucSegParalell( image,
+                       nucleus_index = nucleus_index,
+                       size_selection = size_selection,
+                       smooth = smooth,
+                       norm99 = norm99,
+                       maxThresh = maxThresh,
+                       autosmooth = autosmooth,
+                       tolerance = tolerance,
+                       ext = ext,
+                       whole_cell = FALSE,
+                       cores = cores)
+    
+    #if dilate
+    if (cytIdentification == "dilate"){
+        return(nmask)
+    }
+    
+    if (cytIdentification == "diskModel"){
+        
+        cells <- cytSegParalell (nmask,
+                                            image,
+                                            size_selection = size_selection,
+                                            smooth = smooth,
+                                            kernSize = kernSize,
+                                            minMax = minMax,
+                                            asin = asin,
+                                            cores = cores)
+        
+        return(cells)
+    }
+    
+    #if marker
+    else if (cytIdentification == "markerModel"){
+        
+        cells <- cytSeg2Paralell(nmask,
+                                             image,
+                                             channel,
+                                             size_selection = size_selection,
+                                             smooth = smooth,
+                                             minMax = minMax,
+                                             asin = asin,
+                                             cores = cores)
+        
+        return(cells)
+    }
 }
