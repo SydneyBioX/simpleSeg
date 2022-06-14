@@ -4,7 +4,7 @@
 \alias{simpleSeg}
 \title{Perform simple segmentation}
 \usage{
-simpleSeg(image)
+simpleSeg(image) Takes an image or list of images and generates cell masks
 }
 \arguments{
 \item{image}{An image}
