@@ -4,12 +4,55 @@
 \alias{simpleSeg}
 \title{Perform simple segmentation}
 \usage{
-simpleSeg(image) Takes an image or list of images and generates cell masks
+simpleSeg(
+  image,
+  cytIdentification = "dilate",
+  nucleus_index = 1,
+  size_selectionNuc = 10,
+  smooth = 1,
+  norm99 = TRUE,
+  maxThresh = TRUE,
+  autosmooth = TRUE,
+  tolerance = 0.01,
+  ext = 1,
+  kernSize = 3,
+  size_selectionCyt = 5,
+  minMax = FALSE,
+  asin = FALSE,
+  cyt_index = 2,
+  cores = 50
+)
 }
 \arguments{
-\item{image}{An image}
+\item{image}{An image or list of images or cytoimagelist to be read into the function.}
+
+\item{cytIdentification}{method of cytoplasm identification. Can be "dilate", "diskModel" or "markerModel"}
+
+\item{nucleus_index}{the channel number of the nuclei marker}
+
+\item{size_selectionNuc}{minimum pixels for an object to be recognised as signal and not noise}
+
+\item{smooth}{the amount of smoothing to be applied to the nuclei marker channle}
+
+\item{maxThresh}{scale intensities between 0 and 1}
+
+\item{autosmooth}{dynamically scales smoothing based on signal to noise ratio of individual images}
+
+\item{ext}{= 1,}
+
+\item{kernSize}{size of dilation around nuclei to create cell disk #dilation size}
+
+\item{size_selectionCyt}{#sizeSelectionCyt}
+
+\item{minMax}{#scale image channel intensities between 0 and 1}
+
+\item{cyt_index}{index of the cytoplasm marker channel. Use if cytidentification = markerModel}
+
+\item{cores}{= 50 number or cores for paralell processing}
 
 \item{BPPARAM}{A BiocParallelParam object.}
+
+\item{norm99perfrom}{99th percentile transformation}
 }
 \value{
 A list of image masks
