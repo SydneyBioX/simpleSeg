@@ -12,9 +12,9 @@
 #' @param autosmooth dynamically scales smoothing based on signal to noise ratio of individual images
 #' @param tolerance
 #' @param ext = 1,
-#' @param kernSize size of dilation around nuclei to create cell disk #dilation size
+#' @param discSize size of dilation around nuclei to create cell disk #dilation size
 
-#' @param size_selectionCyt #sizeSelectionCyt
+#' @param sizeSelectionCyt #sizeSelectionCyt
 #' @param minMax #scale image channel intensities between 0 and 1
 # asin = FALSE #perform asinh normalization on image channels
 
@@ -51,12 +51,12 @@ simpleSeg <- function(#nmask parameters
     autosmooth = TRUE,
     tolerance = 0.01,
     ext = 1,
-    kernSize = 3,
+    discSize = 3,
     
     #cyt1 parameters
     #nmask,
     
-    size_selectionCyt = 5,
+    sizeSelectionCyt = 5,
     minMax = FALSE,
     asin = FALSE,
     
@@ -82,7 +82,7 @@ simpleSeg <- function(#nmask parameters
                              tolerance = tolerance,
                              ext = ext,
                              whole_cell = whole_cell,
-                             kernSize = kernSize,
+                             discSize = discSize,
                              cores = cores)
     
     #if dilate
@@ -94,9 +94,9 @@ simpleSeg <- function(#nmask parameters
         
         cells <- cytSegParalell (nmask,
                                  image,
-                                 size_selection = size_selectionCyt,
+                                 size_selection = sizeSelectionCyt,
                                  smooth = smooth,
-                                 kernSize = kernSize,
+                                 discSize = discSize,
                                  minMax = minMax,
                                  asin = asin,
                                  cores = cores)
@@ -110,7 +110,7 @@ simpleSeg <- function(#nmask parameters
         cells <- cytSeg2Paralell(nmask,
                                  image,
                                  channel = cyt_index,
-                                 size_selection = size_selectionCyt,
+                                 size_selection = sizeSelectionCyt,
                                  smooth = smooth,
                                  minMax = minMax,
                                  asin = asin,
@@ -145,7 +145,7 @@ nucSeg <- function(image,
                           autosmooth = TRUE,
                           tolerance = 0.01,
                           ext = 1,
-                          kernSize = 3,
+                          discSize = 3,
                           whole_cell = TRUE){
     
     
@@ -220,7 +220,7 @@ nucSeg <- function(image,
     #nMaskLabel <- bwlabel(nmask1) 
     #nMaskLabel <- colorLabels(nmask1) 
     #display(nMaskLabel)
-    kern = makeBrush(kernSize, shape='disc')
+    kern = makeBrush(discSize, shape='disc')
     cell1 = dilate(nmask1, kern)
     disk1 = cell1-nmask1 >0
     disk1 <- watershed(disk1)
@@ -244,10 +244,10 @@ nucSegParalell <- function(image,
                            autosmooth = TRUE,
                            tolerance = 0.01,
                            ext = 1,
-                           kernSize = 3,
+                           discSize = 3,
                            whole_cell = TRUE,
                            cores = 50){
-    output <- BiocParallel::bplapply(image, nucSeg, nucleus_index = nucleus_index, tolerance = tolerance, ext = ext, kernSize = kernSize, size_selection = size_selection, smooth = smooth, norm99 = norm99,maxThresh = maxThresh, autosmooth = autosmooth,  whole_cell = whole_cell,
+    output <- BiocParallel::bplapply(image, nucSeg, nucleus_index = nucleus_index, tolerance = tolerance, ext = ext, discSize = discSize, size_selection = size_selection, smooth = smooth, norm99 = norm99,maxThresh = maxThresh, autosmooth = autosmooth,  whole_cell = whole_cell,
                                      BPPARAM  = BiocParallel::MulticoreParam(workers = cores))
 }
 
@@ -257,12 +257,12 @@ CytSeg <- function(nmask,
                    image,
                    size_selection = 5,
                    smooth = 1,#Does not appear to do anything here
-                   kernSize = 3,
+                   discSize = 3,
                    minMax = FALSE,
                    asin = FALSE){
     
     
-    kern = makeBrush(kernSize, shape='disc')
+    kern = makeBrush(discSize, shape='disc')
     
     cell = dilate(nmask, kern)
     
@@ -327,11 +327,11 @@ cytSegParalell <- function(nmask,
                            image,
                            size_selection = 5,
                            smooth = 1,
-                           kernSize = 3,
+                           discSize = 3,
                            minMax = FALSE,
                            asin = FALSE,
                            cores = 50){
-    test.masks.cyt <- BiocParallel::bpmapply(CytSeg, nmask, image, size_selection = size_selection, smooth = smooth, kernSize = kernSize, minMax = minMax, asin = asin, BPPARAM  = BiocParallel::MulticoreParam(workers = cores))
+    test.masks.cyt <- BiocParallel::bpmapply(CytSeg, nmask, image, size_selection = size_selection, smooth = smooth, discSize = discSize, minMax = minMax, asin = asin, BPPARAM  = BiocParallel::MulticoreParam(workers = cores))
 }
 
 
