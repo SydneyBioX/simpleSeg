@@ -2,6 +2,25 @@
 #'
 #' @param image An image
 #' @param BPPARAM A BiocParallelParam object.
+#' @param image An image or list of images or cytoimagelist to be read into the function.
+#' @param cytIdentification method of cytoplasm identification. Can be "dilate", "diskModel" or "markerModel"
+#' @param nucleus_index the channel number of the nuclei marker
+#' @param size_selectionNuc minimum pixels for an object to be recognised as signal and not noise
+#' @param smooth the amount of smoothing to be applied to the nuclei marker channle
+#' @param norm99perfrom 99th percentile transformation
+#' @param maxThresh scale intensities between 0 and 1
+#' @param autosmooth dynamically scales smoothing based on signal to noise ratio of individual images
+#' @param tolerance
+#' @param ext = 1,
+#' @param kernSize size of dilation around nuclei to create cell disk
+
+#' @param size_selectionCyt
+#' @param minMax #scale image channel intensities between 0 and 1
+# asin = FALSE #perform asinh normalization on image channels
+
+#' @param cyt_index index of the cytoplasm marker channel. Use if cytidentification = markerModel
+
+#' @param cores = 50 number or cores for paralell processing
 #'
 #' @return A list of image masks
 #'
@@ -11,7 +30,14 @@
 #'
 #' @export
 #' @rdname simpleSeg
-#' @importFrom BiocParallel SerialParam bplapply
+#' @importFrom BiocParallel SerialParam bplapply MulticoreParam
+#' @importFrom EBImage gblur otsu bwlabel makeBrush filter2 watershed dilate distmap propagate
+#' @importFrom parallel mcmapply
+#' @importFrom terra predict
+#' @importFrom cytomapper CytoImageList
+#' @importFrom stats prcomp quantile lm 
+#' @importFrom BiocSingular RandomParam
+#' @importFrom BiocNeighbors AnnoyParam
 
 autosmooth <- function(channel, smooth, threshold, adjustment){
     signal <- mean(channel[,,9])
@@ -334,7 +360,7 @@ simpleSeg <- function(#nmask parameters
     
     #if dilate
     if (cytIdentification == "dilate"){
-        return(nmask)
+        return(CytoImageList(nmask))
     }
     
     if (cytIdentification == "diskModel"){
@@ -348,7 +374,7 @@ simpleSeg <- function(#nmask parameters
                                  asin = asin,
                                  cores = cores)
         
-        return(cells)
+        return(CytoImageList(cells))
     }
     
     #if marker
@@ -467,82 +493,3 @@ normalize.cells <- function(cells,
 
 
 
-simpleSeg <- function(#nmask parameters
-    image,
-    cytIdentification = "dilate",
-    nucleus_index = 1,
-    size_selection = 10,
-    smooth = 1,
-    norm99 = TRUE,
-    maxThresh = TRUE,
-    autosmooth = TRUE,
-    tolerance = 0.01,
-    ext = 1,
-    whole_cell = TRUE,
-    
-    #cyt1 parameters
-    #nmask,
-    
-    size_selection = 5,
-    minMax = FALSE,
-    asin = FALSE,
-    ext = 2,
-    
-    #cyt2 parameters
-    #nmask,
-    channel,
-    
-    cores = 50
-){
-    # do nmask (if cytIdentification is null return nuc mask)
-    
-    if (cytIdentification == "dilate"){
-        whole_cell = TRUE
-    }
-    
-    nmask <- nucSegParalell( image,
-                       nucleus_index = nucleus_index,
-                       size_selection = size_selection,
-                       smooth = smooth,
-                       norm99 = norm99,
-                       maxThresh = maxThresh,
-                       autosmooth = autosmooth,
-                       tolerance = tolerance,
-                       ext = ext,
-                       whole_cell = FALSE,
-                       cores = cores)
-    
-    #if dilate
-    if (cytIdentification == "dilate"){
-        return(nmask)
-    }
-    
-    if (cytIdentification == "diskModel"){
-        
-        cells <- cytSegParalell (nmask,
-                                            image,
-                                            size_selection = size_selection,
-                                            smooth = smooth,
-                                            kernSize = kernSize,
-                                            minMax = minMax,
-                                            asin = asin,
-                                            cores = cores)
-        
-        return(cells)
-    }
-    
-    #if marker
-    else if (cytIdentification == "markerModel"){
-        
-        cells <- cytSeg2Paralell(nmask,
-                                             image,
-                                             channel,
-                                             size_selection = size_selection,
-                                             smooth = smooth,
-                                             minMax = minMax,
-                                             asin = asin,
-                                             cores = cores)
-        
-        return(cells)
-    }
-}
