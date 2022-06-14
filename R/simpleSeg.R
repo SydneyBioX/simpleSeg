@@ -1,4 +1,4 @@
-#' Perform simple segmentation
+#' Perform simple segmentation of multiplexed imaging data
 #'
 #' @param image An image
 #' @param BPPARAM A BiocParallelParam object.
@@ -9,14 +9,16 @@
 #' @param smooth the amount of smoothing to be applied to the nuclei marker channle
 #' @param norm99perfrom 99th percentile transformation
 #' @param maxThresh scale intensities between 0 and 1
-#' @param autosmooth dynamically scales smoothing based on signal to noise ratio of individual images
+#' @param autoS dynamically scales smoothing based on signal to noise ratio of individual images
+#' @param nucNormalize a list containing desired normalization/transformation methods to be performed prior to nucleus identification, accepted values are 'max Thresh' 'norm99perform' and/or 'autosmooth'
 #' @param tolerance
 #' @param ext = 1,
 #' @param discSize size of dilation around nuclei to create cell disk #dilation size
 
-#' @param sizeSelectionCyt #sizeSelectionCyt
-#' @param minMax #scale image channel intensities between 0 and 1
-# asin = FALSE #perform asinh normalization on image channels
+#' @param sizeSelectionCyt
+#' @param minMax scale image channel intensities between 0 and 1
+#' @param asin perform asinh normalization on image channels
+#' @param cytNormalize a list containing desired normalization/transformation methods to be performed prior to cytoplasm identification, accepted values are 'mixMax' and/or 'asin'
 
 #' @param cyt_index index of the cytoplasm marker channel. Use if cytidentification = markerModel
 
@@ -46,27 +48,28 @@ simpleSeg <- function(#nmask parameters
     nucleus_index = 1,
     size_selectionNuc = 10,
     smooth = 1,
-    norm99 = TRUE,
-    maxThresh = TRUE,
-    autosmooth = TRUE,
+    nucNormalize = c("norm99", "maxThresh", "autoS"),
     tolerance = 0.01,
     ext = 1,
     discSize = 3,
     
     #cyt1 parameters
-    #nmask,
     
     sizeSelectionCyt = 5,
-    minMax = FALSE,
-    asin = FALSE,
+    #minMax = FALSE,
+    #asin = FALSE,
+    cytNormalize = c("minMax", "asin"),
     
     #cyt2 parameters
-    #nmask,
     cyt_index=2,
     
     cores = 50
 ){
     # do nmask (if cytIdentification is null return nuc mask)
+    
+    if (!(cytIdentification %in% c("none", "dilate", "discModel", "markerModel"))){
+        stop("cytIdentification must be one of the following: 'none', 'dilate', 'discModel', 'markerModel'")
+    }
     whole_cell = FALSE
     if (cytIdentification == "dilate"){
         whole_cell = TRUE
@@ -76,9 +79,7 @@ simpleSeg <- function(#nmask parameters
                              nucleus_index = nucleus_index,
                              size_selection = size_selectionNuc,
                              smooth = smooth,
-                             norm99 = norm99,
-                             maxThresh = maxThresh,
-                             autosmooth = autosmooth,
+                             normalize = nucNormalize,
                              tolerance = tolerance,
                              ext = ext,
                              whole_cell = whole_cell,
@@ -87,21 +88,25 @@ simpleSeg <- function(#nmask parameters
     
     #if dilate
     if (cytIdentification == "dilate"){
-        return(CytoImageList(nmask))
+        return(cytomapper::CytoImageList(nmask))
+    }
+    if (cytIdentification == "none"){
+        return(cytomapper::CytoImageList(nmask))
     }
     
-    if (cytIdentification == "diskModel"){
+    if (cytIdentification == "discModel"){
         
         cells <- cytSegParalell (nmask,
                                  image,
                                  size_selection = sizeSelectionCyt,
                                  smooth = smooth,
                                  discSize = discSize,
-                                 minMax = minMax,
-                                 asin = asin,
+                                 #minMax = minMax,
+                                 #asin = asin,
+                                 normalize = cytNormalize,
                                  cores = cores)
         
-        return(CytoImageList(cells))
+        return(cytomapper::CytoImageList(cells))
     }
     
     #if marker
@@ -112,11 +117,12 @@ simpleSeg <- function(#nmask parameters
                                  channel = cyt_index,
                                  size_selection = sizeSelectionCyt,
                                  smooth = smooth,
-                                 minMax = minMax,
-                                 asin = asin,
+                                 #minMax = minMax,
+                                 #asin = asin
+                                 normalize = cytNormalize,
                                  cores = cores)
         
-        return(CytoImageList(cells))
+        return(cytomapper::CytoImageList(cells))
     }
 }
 
@@ -137,34 +143,32 @@ autosmooth <- function(channel, smooth, threshold, adjustment){
 }
 
 nucSeg <- function(image,
-                          nucleus_index = 1,
-                          size_selection = 10,
-                          smooth = 1,
-                          norm99 = TRUE,
-                          maxThresh = TRUE,
-                          autosmooth = TRUE,
-                          tolerance = 0.01,
-                          ext = 1,
-                          discSize = 3,
-                          whole_cell = TRUE){
+                   nucleus_index = 1,
+                   size_selection = 10,
+                   smooth = 1,
+                   normalize = c("norm99", "maxThresh", "autoS"),
+                   tolerance = 0.01,
+                   ext = 1,
+                   discSize = 3,
+                   whole_cell = TRUE){
     
     
     
     nuc <- image[,,nucleus_index]
     
-    if (autosmooth){
+    if ("autoS" %in% normalize){
         smooth <- autosmooth(image, smooth, 9, 4) # adjusting the smoothing parameter for low intensity images
     }
     
     
     # Hotspot filtering. Intensities greater than the 99 percentile are changed to be exactly the 99th percentile intensity. This has the effect of removing outliers.
     
-    if (norm99){
+    if ("norm99" %in% normalize){
         nuc[nuc > quantile(nuc, 0.99,na.rm = TRUE)] <- quantile(nuc,
                                                                 0.99,
                                                                 na.rm = TRUE)
     }
-    if (maxThresh){
+    if ("maxThresh" %in% normalize){
         nuc <- nuc/max(nuc,na.rm = TRUE)
     }
     
@@ -174,13 +178,13 @@ nucSeg <- function(image,
     
     
     nuc1 <- EBImage::gblur(sqrt(nuc1),
-                  smooth)
+                           smooth)
     
     
     
     # Otsu thresholding. 
-    nth <- otsu((nuc1),
-                range = c(0,1)) # thresholding on the sqrt intensities works better. 
+    nth <- EBImage::otsu((nuc1),
+                         range = c(0,1)) # thresholding on the sqrt intensities works better. 
     nmask = nuc1 >nth # the threshold is squared to adjust of the sqrt previously.
     
     
@@ -192,7 +196,7 @@ nucSeg <- function(image,
     
     
     # Size selection
-    nMaskLabel <- bwlabel(nmask) 
+    nMaskLabel <- EBImage::bwlabel(nmask) 
     tnuc1 <- table(nMaskLabel)
     
     
@@ -202,10 +206,10 @@ nucSeg <- function(image,
     
     
     
-    kern = makeBrush(5, shape='disc')
+    kern = EBImagemakeBrush(5, shape='disc')
     
     
-    disk_blur <- filter2(sqrt(nuc1), kern)
+    disk_blur <- EBImage::filter2(sqrt(nuc1), kern)
     #disk_blur <- disk_blur/
     
     #creating a distance matrix
@@ -214,16 +218,16 @@ nucSeg <- function(image,
     # water shed to segment
     #nuc1 <- (nuc1>0)*1
     #nuc1 <- EBImage::distmap(nuc1)
-    nmask1 <- watershed(disk_blur * nmask,
-                        tolerance = tolerance,
-                        ext = ext)
+    nmask1 <- EBImage::watershed(disk_blur * nmask,
+                                 tolerance = tolerance,
+                                 ext = ext)
     #nMaskLabel <- bwlabel(nmask1) 
     #nMaskLabel <- colorLabels(nmask1) 
     #display(nMaskLabel)
-    kern = makeBrush(discSize, shape='disc')
-    cell1 = dilate(nmask1, kern)
+    kern = EBImage::makeBrush(discSize, shape='disc')
+    cell1 = EBImage::dilate(nmask1, kern)
     disk1 = cell1-nmask1 >0
-    disk1 <- watershed(disk1)
+    disk1 <- EBImage::watershed(disk1)
     #output<-list(nmask1,nuc1, disk_blur, disk1, cell1)
     #return(output)
     if(whole_cell){
@@ -239,15 +243,13 @@ nucSegParalell <- function(image,
                            nucleus_index = 1,
                            size_selection = 10,
                            smooth = 1,
-                           norm99 = TRUE,
-                           maxThresh = TRUE,
-                           autosmooth = TRUE,
+                           normalize = c("norm99", "maxThresh", "autoS"),
                            tolerance = 0.01,
                            ext = 1,
                            discSize = 3,
                            whole_cell = TRUE,
                            cores = 50){
-    output <- BiocParallel::bplapply(image, nucSeg, nucleus_index = nucleus_index, tolerance = tolerance, ext = ext, discSize = discSize, size_selection = size_selection, smooth = smooth, norm99 = norm99,maxThresh = maxThresh, autosmooth = autosmooth,  whole_cell = whole_cell,
+    output <- BiocParallel::bplapply(image, nucSeg, nucleus_index = nucleus_index, tolerance = tolerance, ext = ext, discSize = discSize, size_selection = size_selection, smooth = smooth, normalize = normalize,  whole_cell = whole_cell,
                                      BPPARAM  = BiocParallel::MulticoreParam(workers = cores))
 }
 
@@ -258,13 +260,14 @@ CytSeg <- function(nmask,
                    size_selection = 5,
                    smooth = 1,#Does not appear to do anything here
                    discSize = 3,
-                   minMax = FALSE,
-                   asin = FALSE){
+                   #minMax = FALSE,
+                   #asin = FALSE
+                   normalize = c("minMax", "asin")){
     
     
-    kern = makeBrush(discSize, shape='disc')
+    kern = EBImage::makeBrush(discSize, shape='disc')
     
-    cell = dilate(nmask, kern)
+    cell = EBImage::dilate(nmask, kern)
     
     
     disk = cell - nmask > 0
@@ -273,14 +276,14 @@ CytSeg <- function(nmask,
     image1 <- image
     test <- NULL
     
-    if (minMax){
+    if ("minMax" %in% normalize){
         for (i in 1:dim(image)[3]){
             image[,,i] <- image[,,i]/max(image[,,i])
         }
     }
     
     
-    if (asin){
+    if ("asin" %in% normalize){
         image <- asinh(image)
     }
     if (is.null(smooth) == FALSE){
@@ -301,22 +304,22 @@ CytSeg <- function(nmask,
     fit <- lm(disk ~ .-disk, data = long_image_2)
     
     cytpred <- nmask
-    cytpred[] <- predict(fit, longImage_disk)
+    cytpred[] <- terra::predict(fit, longImage_disk)
     cytpred <- cytpred - min(cytpred)
     cytpred <- cytpred/max(cytpred)
     
-    cellTh <- otsu(cytpred,range = c(0,1))
+    cellTh <- EBImage::otsu(cytpred,range = c(0,1))
     cell <- cytpred > cellTh
     
     cell <- cell + nmask > 0
     
-    nuc_label <- bwlabel(nmask) 
+    nuc_label <- EBImage::bwlabel(nmask) 
     tnuc <- table(nuc_label)
     nmask[nuc_label%in%names(which(tnuc<=size_selection))] <- 0
     
     
-    cmask4 <- propagate(cytpred, nmask, cell)
-    justdisk <- propagate(disk, nmask, cell)
+    cmask4 <- EBImage::propagate(cytpred, nmask, cell)
+    justdisk <- EBImage::propagate(disk, nmask, cell)
     
     #output<-list(cmask4,cmaskdisk, cell1, disk, justdisk)
     return(cmask4)
@@ -328,10 +331,11 @@ cytSegParalell <- function(nmask,
                            size_selection = 5,
                            smooth = 1,
                            discSize = 3,
-                           minMax = FALSE,
-                           asin = FALSE,
+                           #minMax = FALSE,
+                           #asin = FALSE,
+                           normalize = c("minMax", "asin"),
                            cores = 50){
-    test.masks.cyt <- BiocParallel::bpmapply(CytSeg, nmask, image, size_selection = size_selection, smooth = smooth, discSize = discSize, minMax = minMax, asin = asin, BPPARAM  = BiocParallel::MulticoreParam(workers = cores))
+    test.masks.cyt <- BiocParallel::bpmapply(CytSeg, nmask, image, size_selection = size_selection, smooth = smooth, discSize = discSize, normalize = normalize, BPPARAM  = BiocParallel::MulticoreParam(workers = cores))
 }
 
 
@@ -342,21 +346,22 @@ CytSeg2 <- function(nmask,
                     channel = 2,
                     size_selection = 5,
                     smooth = 1, #does not appear to do anything here
-                    minMax = FALSE,
-                    asin = FALSE){
+                    #minMax = FALSE,
+                    #asin = FALSE
+                    normalize = c("minMax", "asin")){
     CD44 <- asinh(image[,,channel])/asinh(max(image[,,channel])) #CD44 is the target protein for this channel
     
-    if (minMax){
+    if ("minMax" %in% normalize){
         CD44 <- CD44/max(CD44)
     }
     
     
-    if (asin){
+    if ("asin" %in% normalize){
         CD44 <- asinh(CD44)
     }
     
     
-    CD44smooth <- gblur(CD44, sigma = smooth)
+    CD44smooth <- EBImage::gblur(CD44, sigma = smooth)
     
     
     longImage <- data.frame(apply(asinh(image),3, as.vector), CD44smooth = as.vector(CD44smooth))
@@ -367,17 +372,17 @@ CytSeg2 <- function(nmask,
     CD44pred <- CD44pred - min(CD44pred)
     CD44pred <- CD44pred/max(CD44pred)
     
-    cellTh <- otsu(CD44pred,range = c(0,1))
+    cellTh <- EBImage::otsu(CD44pred,range = c(0,1))
     cell <- CD44pred > cellTh
     
     cell <- cell + nmask > 0
     
-    nuc_label <- bwlabel(nmask) 
+    nuc_label <- EBImage::bwlabel(nmask) 
     tnuc <- table(nuc_label)
     nmask[nuc_label%in%names(which(tnuc<=size_selection))] <- 0
     
     
-    cmask4 <- propagate(CD44pred, nmask, cell)
+    cmask4 <- EBImage::propagate(CD44pred, nmask, cell)
     
     return(cmask4)
 }
@@ -389,22 +394,13 @@ cytSeg2Paralell <- function(nmask,
                             channel = 2,
                             size_selection = 5,
                             smooth = 1,
-                            minMax = FALSE,
-                            asin = FALSE,
+                            #minMax = FALSE,
+                            #asin = FALSE,
+                            normalize = c("minMax", "asin"),
                             cores = 50){
-    test.masks.cyt <- BiocParallel::bpmapply(CytSeg2, nmask, image, channel = channel, size_selection = size_selection, smooth = smooth,  BPPARAM  = BiocParallel::MulticoreParam(workers = cores))
+    test.masks.cyt <- BiocParallel::bpmapply(CytSeg2, nmask, image, channel = channel, size_selection = size_selection, smooth = smooth, normalize = normalize,  BPPARAM  = BiocParallel::MulticoreParam(workers = cores))
 }
 # bpmapply()
 
 
 ### Simple seg
-
-
-
-
-
-
-
-
-
-
