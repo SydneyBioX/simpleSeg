@@ -1,4 +1,4 @@
-#' Perform simple segmentation of multiplexed imaging data
+#' Perform simple segmentation
 #'
 #' @param image An image
 #' @param BPPARAM A BiocParallelParam object.
@@ -11,8 +11,8 @@
 #' @param maxThresh scale intensities between 0 and 1
 #' @param autoS dynamically scales smoothing based on signal to noise ratio of individual images
 #' @param nucNormalize a list containing desired normalization/transformation methods to be performed prior to nucleus identification, accepted values are 'max Thresh' 'norm99perform' and/or 'autosmooth'
-#' @param tolerance
-#' @param ext = 1,
+#' @param tolerance The minimum height of the object in the units of image intensity between its highest point (seed) and the point where it contacts another object (checked for every contact pixel). If the height is smaller than the tolerance, the object will be combined with one of its neighbors, which is the highest. Tolerance should be chosen according to the range of x. Default value is 1, which is a reasonable value if x comes from distmap.
+#' @param ext Radius of the neighborhood in pixels for the detection of neighboring objects. Higher value smoothes out small objects.
 #' @param discSize size of dilation around nuclei to create cell disk #dilation size
 
 #' @param sizeSelectionCyt
@@ -156,22 +156,10 @@ nucSeg <- function(image,
     
     nuc <- image[,,nucleus_index]
     
-    if ("autoS" %in% normalize){
-        smooth <- autosmooth(image, smooth, 9, 4) # adjusting the smoothing parameter for low intensity images
-    }
     
-    
-    # Hotspot filtering. Intensities greater than the 99 percentile are changed to be exactly the 99th percentile intensity. This has the effect of removing outliers.
-    
-    if ("norm99" %in% normalize){
-        nuc[nuc > quantile(nuc, 0.99,na.rm = TRUE)] <- quantile(nuc,
-                                                                0.99,
-                                                                na.rm = TRUE)
-    }
-    if ("maxThresh" %in% normalize){
-        nuc <- nuc/max(nuc,na.rm = TRUE)
-    }
-    
+    nucNormRes <- nucNormalize.helper(image, nuc, smooth, normalize)
+    nuc <- nucNormRes[[2]]
+    smooth <- nucNormRes[[1]]
     
     nuc1 <- nuc
     nuc1[is.na(nuc)] <- 0
@@ -180,13 +168,10 @@ nucSeg <- function(image,
     nuc1 <- EBImage::gblur(sqrt(nuc1),
                            smooth)
     
-    
-    
     # Otsu thresholding. 
     nth <- EBImage::otsu((nuc1),
                          range = c(0,1)) # thresholding on the sqrt intensities works better. 
     nmask = nuc1 >nth # the threshold is squared to adjust of the sqrt previously.
-    
     
     
     #### Watershed to segment nucleus.
@@ -206,30 +191,19 @@ nucSeg <- function(image,
     
     
     
-    kern = EBImagemakeBrush(5, shape='disc')
+    kern = EBImage::makeBrush(5, shape='disc')
     
     
     disk_blur <- EBImage::filter2(sqrt(nuc1), kern)
-    #disk_blur <- disk_blur/
     
-    #creating a distance matrix
-    #distNuc <- EBImage::distmap(nuc1)
-    
-    # water shed to segment
-    #nuc1 <- (nuc1>0)*1
-    #nuc1 <- EBImage::distmap(nuc1)
     nmask1 <- EBImage::watershed(disk_blur * nmask,
                                  tolerance = tolerance,
                                  ext = ext)
-    #nMaskLabel <- bwlabel(nmask1) 
-    #nMaskLabel <- colorLabels(nmask1) 
-    #display(nMaskLabel)
+    
     kern = EBImage::makeBrush(discSize, shape='disc')
     cell1 = EBImage::dilate(nmask1, kern)
     disk1 = cell1-nmask1 >0
     disk1 <- EBImage::watershed(disk1)
-    #output<-list(nmask1,nuc1, disk_blur, disk1, cell1)
-    #return(output)
     if(whole_cell){
         return(cell1)
     }
