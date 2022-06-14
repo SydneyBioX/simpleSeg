@@ -42,9 +42,14 @@ options(width = 130)
 library(simpleSeg)
 ```
 
-
+## Reading in data
+any imagning data can be read into the function to generate masks, be it matrices, lists or CytoImageLists. for the purposes of this demonstration, we will use example data provided in IMCdatasets package
 
 ```{r}
-1+1
+library(imcdatasets)
+```
+
+```{r}
+images <- imcdatasets::DamondPancreas2019_images()
 ```
 
