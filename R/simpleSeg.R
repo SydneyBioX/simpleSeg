@@ -28,9 +28,9 @@
 #' 
 #' 1+1
 #'
-#' @export
+#' @export simpleSeg
 #' @rdname simpleSeg
-#' @importFrom BiocParallel SerialParam bplapply MulticoreParam pbmapply
+#' @importFrom BiocParallel SerialParam bplapply MulticoreParam bpmapply
 #' @importFrom EBImage gblur otsu bwlabel makeBrush filter2 watershed dilate distmap propagate
 #' @importFrom terra predict
 #' @importFrom cytomapper CytoImageList
