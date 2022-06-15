@@ -2,7 +2,7 @@
 % Please edit documentation in R/simpleSeg.R
 \name{simpleSeg}
 \alias{simpleSeg}
-\title{Perform simple segmentation}
+\title{Perform simple segmentation of multiplexed cellular images}
 \usage{
 simpleSeg(
   image,
@@ -10,15 +10,12 @@ simpleSeg(
   nucleus_index = 1,
   size_selectionNuc = 10,
   smooth = 1,
-  norm99 = TRUE,
-  maxThresh = TRUE,
-  autosmooth = TRUE,
+  nucNormalize = c("norm99", "maxThresh", "autoS"),
   tolerance = 0.01,
   ext = 1,
-  kernSize = 3,
-  size_selectionCyt = 5,
-  minMax = FALSE,
-  asin = FALSE,
+  discSize = 3,
+  sizeSelectionCyt = 5,
+  cytNormalize = c("minMax", "asin"),
   cyt_index = 2,
   cores = 50
 )
@@ -34,17 +31,15 @@ simpleSeg(
 
 \item{smooth}{the amount of smoothing to be applied to the nuclei marker channle}
 
-\item{maxThresh}{scale intensities between 0 and 1}
+\item{nucNormalize}{a list containing desired normalization/transformation methods to be performed prior to nucleus identification, accepted values are 'max Thresh' 'norm99perform' and/or 'autosmooth'}
 
-\item{autosmooth}{dynamically scales smoothing based on signal to noise ratio of individual images}
+\item{tolerance}{The minimum height of the object in the units of image intensity between its highest point (seed) and the point where it contacts another object (checked for every contact pixel). If the height is smaller than the tolerance, the object will be combined with one of its neighbors, which is the highest. Tolerance should be chosen according to the range of x. Default value is 1, which is a reasonable value if x comes from distmap.}
 
-\item{ext}{= 1,}
+\item{ext}{Radius of the neighborhood in pixels for the detection of neighboring objects. Higher value smoothes out small objects.}
 
-\item{kernSize}{size of dilation around nuclei to create cell disk #dilation size}
+\item{discSize}{size of dilation around nuclei to create cell disk #dilation size}
 
-\item{size_selectionCyt}{#sizeSelectionCyt}
-
-\item{minMax}{#scale image channel intensities between 0 and 1}
+\item{cytNormalize}{a list containing desired normalization/transformation methods to be performed prior to cytoplasm identification, accepted values are 'mixMax' and/or 'asin'}
 
 \item{cyt_index}{index of the cytoplasm marker channel. Use if cytidentification = markerModel}
 
@@ -53,12 +48,20 @@ simpleSeg(
 \item{BPPARAM}{A BiocParallelParam object.}
 
 \item{norm99perfrom}{99th percentile transformation}
+
+\item{maxThresh}{scale intensities between 0 and 1}
+
+\item{autoS}{dynamically scales smoothing based on signal to noise ratio of individual images}
+
+\item{minMax}{scale image channel intensities between 0 and 1}
+
+\item{asin}{perform asinh normalization on image channels}
 }
 \value{
 A list of image masks
 }
 \description{
-Perform simple segmentation
+Perform simple segmentation of multiplexed cellular images
 }
 \examples{
 
