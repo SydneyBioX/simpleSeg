@@ -1,4 +1,4 @@
-#' Perform simple segmentation
+#' Perform simple segmentation of multiplexed cellular images
 #'
 #' @param image An image
 #' @param BPPARAM A BiocParallelParam object.
