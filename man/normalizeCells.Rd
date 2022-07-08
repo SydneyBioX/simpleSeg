@@ -27,7 +27,7 @@ normalizeCells(
 
 \item{transformation}{The transformation to be performed, default is NULL, accepted values: "asinh", "sqrt", "log"}
 
-\item{method}{The normalization method to be performed, default is NULL, accepted values: "meandiv", "99perc", "1stPC", "scMerge"}
+\item{method}{The normalization method to be performed, default is NULL, accepted values: "meandiv", "99perc", "1stPC"}
 }
 \value{
 returns a dataframe with individual cells as rows and features as columns
