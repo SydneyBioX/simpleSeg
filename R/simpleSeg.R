@@ -9,8 +9,8 @@
 #' @param smooth the amount of smoothing to be applied to the nuclei marker channle
 #' @param norm99perfrom 99th percentile transformation
 #' @param maxThresh scale intensities between 0 and 1
-#' @param autoS dynamically scales smoothing based on signal to noise ratio of individual images
-#' @param nucNormalize a list containing desired normalization/transformation methods to be performed prior to nucleus identification, accepted values are 'max Thresh' 'norm99perform' and/or 'autosmooth'
+
+#' @param nucNormalize a list containing desired normalization/transformation methods to be performed prior to nucleus identification, accepted values are 'max Thresh' and 'norm99perform'
 #' @param tolerance The minimum height of the object in the units of image intensity between its highest point (seed) and the point where it contacts another object (checked for every contact pixel). If the height is smaller than the tolerance, the object will be combined with one of its neighbors, which is the highest. Tolerance should be chosen according to the range of x. Default value is 1, which is a reasonable value if x comes from distmap.
 #' @param ext Radius of the neighborhood in pixels for the detection of neighboring objects. Higher value smoothes out small objects.
 #' @param discSize size of dilation around nuclei to create cell disk #dilation size
@@ -48,7 +48,7 @@ simpleSeg <- function(#nmask parameters
     nucleus_index = 1,
     size_selectionNuc = 10,
     smooth = 1,
-    nucNormalize = c("norm99", "maxThresh", "autoS"),
+    nucNormalize = c("norm99", "maxThresh"),
     tolerance = 0.01,
     ext = 1,
     discSize = 3,
@@ -63,7 +63,7 @@ simpleSeg <- function(#nmask parameters
     #cyt2 parameters
     cyt_index=2,
     
-    cores = 50
+    cores = 5
 ){
     # do nmask (if cytIdentification is null return nuc mask)
     

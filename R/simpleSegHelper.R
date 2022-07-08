@@ -1,9 +1,9 @@
 ## Nuc Normalization ##
 
-nucNormalize.helper <- function(image, nuc, smooth, normalize){
-    if ("autoS" %in% normalize){
-        smooth <- autosmooth(image, smooth, 9, 4) # adjusting the smoothing parameter for low intensity images
-    }
+nucNormalize.helper <- function(image, nuc, normalize){
+    #if ("autoS" %in% normalize){
+    #    smooth <- autosmooth(image, smooth, 9, 4) # adjusting the smoothing parameter for low intensity images
+    #}
     
     
     # Hotspot filtering. Intensities greater than the 99 percentile are changed to be exactly the 99th percentile intensity. This has the effect of removing outliers.
@@ -16,8 +16,8 @@ nucNormalize.helper <- function(image, nuc, smooth, normalize){
     if ("maxThresh" %in% normalize){
         nuc <- nuc/max(nuc,na.rm = TRUE)
     }
-    output <- list(smooth, nuc)
-    return(output)
+    #output <- list(smooth, nuc)
+    return(nuc)
 }
 
 
@@ -44,7 +44,7 @@ nucSeg <- function(image,
                    nucleus_index = 1,
                    size_selection = 10,
                    smooth = 1,
-                   normalize = c("norm99", "maxThresh", "autoS"),
+                   normalize = c("norm99", "maxThresh"),
                    tolerance = 0.01,
                    ext = 1,
                    discSize = 3,
@@ -55,9 +55,9 @@ nucSeg <- function(image,
   nuc <- image[,,nucleus_index]
   
   
-  nucNormRes <- nucNormalize.helper(image, nuc, smooth, normalize)
-  nuc <- nucNormRes[[2]]
-  smooth <- nucNormRes[[1]]
+  nuc <- nucNormalize.helper(image, nuc, normalize)
+  
+  #smooth <- nucNormRes[[1]]
   
   nuc1 <- nuc
   nuc1[is.na(nuc)] <- 0
@@ -92,7 +92,7 @@ nucSeg <- function(image,
   kern = EBImage::makeBrush(5, shape='disc')
   
   
-  disk_blur <- EBImage::filter2(sqrt(nuc1), kern)
+  disk_blur <- EBImage::filter2(sqrt(nuc1), kern) #a
   
   nmask1 <- EBImage::watershed(disk_blur * nmask,
                                tolerance = tolerance,
@@ -124,7 +124,7 @@ nucSegParalell <- function(image,
                            ext = 1,
                            discSize = 3,
                            whole_cell = TRUE,
-                           cores = 50){
+                           cores = 5){
   output <- BiocParallel::bplapply(image, nucSeg, nucleus_index = nucleus_index, tolerance = tolerance, ext = ext, discSize = discSize, size_selection = size_selection, smooth = smooth, normalize = normalize,  whole_cell = whole_cell,
                                    BPPARAM  = BiocParallel::MulticoreParam(workers = cores))
 }
@@ -213,7 +213,7 @@ cytSegParalell <- function(nmask,
                            #minMax = FALSE,
                            #asin = FALSE,
                            normalize = c("minMax", "asin"),
-                           cores = 50){
+                           cores = 5){
   test.masks.cyt <- BiocParallel::bpmapply(CytSeg, nmask, image, size_selection = size_selection, smooth = smooth, discSize = discSize, normalize = normalize, BPPARAM  = BiocParallel::MulticoreParam(workers = cores))
 }
 
@@ -278,6 +278,6 @@ cytSeg2Paralell <- function(nmask,
                             #minMax = FALSE,
                             #asin = FALSE,
                             normalize = c("minMax", "asin"),
-                            cores = 50){
+                            cores = 5){
   test.masks.cyt <- BiocParallel::bpmapply(CytSeg2, nmask, image, channel = channel, size_selection = size_selection, smooth = smooth, normalize = normalize,  BPPARAM  = BiocParallel::MulticoreParam(workers = cores))
 }
