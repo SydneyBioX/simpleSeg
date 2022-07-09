@@ -6,42 +6,35 @@
 \usage{
 simpleSeg(
   image,
-  cytIdentification = "dilate",
-  nucleus_index = 1,
-  size_selectionNuc = 10,
+  nucleus = 1,
+  cellBody = "dilate",
+  sizeSelection = 10,
   smooth = 1,
-  nucNormalize = c("norm99", "maxThresh", "autoS"),
+  transform = c("norm99, maxThresh, asin"),
   tolerance = 0.01,
   ext = 1,
   discSize = 3,
-  sizeSelectionCyt = 5,
-  cytNormalize = c("minMax", "asin"),
-  cyt_index = 2,
-  cores = 50
+  cores = 5
 )
 }
 \arguments{
 \item{image}{An image or list of images or cytoimagelist to be read into the function.}
 
-\item{cytIdentification}{method of cytoplasm identification. Can be "dilate", "diskModel" or "markerModel"}
+\item{nucleus}{the channel number of the nuclei marker}
 
-\item{nucleus_index}{the channel number of the nuclei marker}
+\item{cellBody}{method of cytoplasm identification. Can be "dilate", "diskModel" or "markerModel"}
 
-\item{size_selectionNuc}{minimum pixels for an object to be recognised as signal and not noise}
+\item{sizeSelection}{minimum pixels for an object to be recognised as signal and not noise}
 
 \item{smooth}{the amount of smoothing to be applied to the nuclei marker channle}
 
-\item{nucNormalize}{a list containing desired normalization/transformation methods to be performed prior to nucleus identification, accepted values are 'max Thresh' 'norm99perform' and/or 'autosmooth'}
+\item{transform}{a list containing desired normalization/transformation methods to be performed prior to cytoplasm identification, accepted values are 'mixMax' and/or 'asin'}
 
 \item{tolerance}{The minimum height of the object in the units of image intensity between its highest point (seed) and the point where it contacts another object (checked for every contact pixel). If the height is smaller than the tolerance, the object will be combined with one of its neighbors, which is the highest. Tolerance should be chosen according to the range of x. Default value is 1, which is a reasonable value if x comes from distmap.}
 
 \item{ext}{Radius of the neighborhood in pixels for the detection of neighboring objects. Higher value smoothes out small objects.}
 
 \item{discSize}{size of dilation around nuclei to create cell disk #dilation size}
-
-\item{cytNormalize}{a list containing desired normalization/transformation methods to be performed prior to cytoplasm identification, accepted values are 'mixMax' and/or 'asin'}
-
-\item{cyt_index}{index of the cytoplasm marker channel. Use if cytidentification = markerModel}
 
 \item{cores}{= 50 number or cores for paralell processing}
 
@@ -51,11 +44,13 @@ simpleSeg(
 
 \item{maxThresh}{scale intensities between 0 and 1}
 
-\item{autoS}{dynamically scales smoothing based on signal to noise ratio of individual images}
+\item{nucNormalize}{a list containing desired normalization/transformation methods to be performed prior to nucleus identification, accepted values are 'max Thresh' and 'norm99perform'}
 
 \item{minMax}{scale image channel intensities between 0 and 1}
 
 \item{asin}{perform asinh normalization on image channels}
+
+\item{cyt_index}{index of the cytoplasm marker channel. Use if cellBody = markerModel}
 }
 \value{
 A list of image masks
