@@ -12,6 +12,10 @@ nucNormalize.helper <- function(image, nuc, normalize){
         nuc[nuc > quantile(nuc, 0.99,na.rm = TRUE)] <- quantile(nuc,
                                                                 0.99,
                                                                 na.rm = TRUE)
+        
+    if ("asin" %in% normalize) {
+      nuc <- asinh(nuc)
+    }   
     }
     if ("maxThresh" %in% normalize){
         nuc <- nuc/max(nuc,na.rm = TRUE)
@@ -23,18 +27,18 @@ nucNormalize.helper <- function(image, nuc, normalize){
 
 ## Autosmooth ##
 
-autosmooth <- function(channel, smooth, threshold, adjustment){
-  signal <- mean(channel[,,9])
-  noise <- sd(channel[,,9])
-  SNR<-10*log10(signal/noise)
-  if (abs(SNR) > threshold){
-    smooth <- smooth + adjustment
-    return(smooth)
-  }
-  else{
-    return(smooth)
-  }
-}
+#autosmooth <- function(channel, smooth, threshold, adjustment){
+#  signal <- mean(channel[,,9])
+#  noise <- sd(channel[,,9])
+#  SNR<-10*log10(signal/noise)
+#  if (abs(SNR) > threshold){
+#    smooth <- smooth + adjustment
+#    return(smooth)
+#  }
+#  else{
+#    return(smooth)
+#  }
+#}
 
 
 ## Segmentation functinos ##
@@ -44,7 +48,7 @@ nucSeg <- function(image,
                    nucleus_index = 1,
                    size_selection = 10,
                    smooth = 1,
-                   normalize = c("norm99", "maxThresh"),
+                   normalize = c("norm99", "maxThresh", "asin"),
                    tolerance = 0.01,
                    ext = 1,
                    discSize = 3,
@@ -119,7 +123,7 @@ nucSegParalell <- function(image,
                            nucleus_index = 1,
                            size_selection = 10,
                            smooth = 1,
-                           normalize = c("norm99", "maxThresh", "autoS"),
+                           normalize = c("norm99", "maxThresh", "asin"),
                            tolerance = 0.01,
                            ext = 1,
                            discSize = 3,
@@ -137,9 +141,9 @@ CytSeg <- function(nmask,
                    size_selection = 5,
                    smooth = 1,#Does not appear to do anything here
                    discSize = 3,
-                   #minMax = FALSE,
+                   #maxThresh = FALSE,
                    #asin = FALSE
-                   normalize = c("minMax", "asin")){
+                   normalize = c("maxThresh", "asin")){
   
   
   kern = EBImage::makeBrush(discSize, shape='disc')
@@ -153,7 +157,7 @@ CytSeg <- function(nmask,
   image1 <- image
   test <- NULL
   
-  if ("minMax" %in% normalize){
+  if ("maxThresh" %in% normalize){
     for (i in 1:dim(image)[3]){
       image[,,i] <- image[,,i]/max(image[,,i])
     }
@@ -210,13 +214,18 @@ cytSegParalell <- function(nmask,
                            size_selection = 5,
                            smooth = 1,
                            discSize = 3,
-                           #minMax = FALSE,
+                           #maxThresh = FALSE,
                            #asin = FALSE,
-                           normalize = c("minMax", "asin"),
+                           normalize = c("maxThresh", "asin"),
                            cores = 5){
   test.masks.cyt <- BiocParallel::bpmapply(CytSeg, nmask, image, size_selection = size_selection, smooth = smooth, discSize = discSize, normalize = normalize, BPPARAM  = BiocParallel::MulticoreParam(workers = cores))
 }
 
+list1 <- c(1,2,3,4,5)
+list2 <- c(6,7,8,9,10)
+test.function <- function(list1, list2){
+  return(list1 + list2)
+}
 
 ## Marker Model ##
 ## Cyt segmentation based on a specified cytoplasmic marker ##
@@ -226,12 +235,13 @@ CytSeg2 <- function(nmask,
                     channel = 2,
                     size_selection = 5,
                     smooth = 1, #does not appear to do anything here
-                    #minMax = FALSE,
+                    #maxThresh = FALSE,
                     #asin = FALSE
-                    normalize = c("minMax", "asin")){
+                    normalize = c("maxThresh", "asin")){
+  
   CD44 <- asinh(image[,,channel])/asinh(max(image[,,channel])) #CD44 is the target protein for this channel
   
-  if ("minMax" %in% normalize){
+  if ("maxThresh" %in% normalize){
     CD44 <- CD44/max(CD44)
   }
   
@@ -275,9 +285,9 @@ cytSeg2Paralell <- function(nmask,
                             channel = 2,
                             size_selection = 5,
                             smooth = 1,
-                            #minMax = FALSE,
+                            #maxThresh = FALSE,
                             #asin = FALSE,
-                            normalize = c("minMax", "asin"),
+                            normalize = c("maxThresh", "asin"),
                             cores = 5){
   test.masks.cyt <- BiocParallel::bpmapply(CytSeg2, nmask, image, channel = channel, size_selection = size_selection, smooth = smooth, normalize = normalize,  BPPARAM  = BiocParallel::MulticoreParam(workers = cores))
 }
