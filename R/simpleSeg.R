@@ -3,24 +3,21 @@
 #' @param image An image
 #' @param BPPARAM A BiocParallelParam object.
 #' @param image An image or list of images or cytoimagelist to be read into the function.
-#' @param cytIdentification method of cytoplasm identification. Can be "dilate", "diskModel" or "markerModel"
-#' @param nucleus_index the channel number of the nuclei marker
-#' @param size_selectionNuc minimum pixels for an object to be recognised as signal and not noise
+#' @param cellBody method of cytoplasm identification. Can be "dilate", "diskModel" or "markerModel"
+#' @param nucleus the channel number of the nuclei marker
+#' @param sizeSelection minimum pixels for an object to be recognised as signal and not noise
 #' @param smooth the amount of smoothing to be applied to the nuclei marker channle
 #' @param norm99perfrom 99th percentile transformation
 #' @param maxThresh scale intensities between 0 and 1
 
-#' @param nucNormalize a list containing desired normalization/transformation methods to be performed prior to nucleus identification, accepted values are 'max Thresh' and 'norm99perform'
 #' @param tolerance The minimum height of the object in the units of image intensity between its highest point (seed) and the point where it contacts another object (checked for every contact pixel). If the height is smaller than the tolerance, the object will be combined with one of its neighbors, which is the highest. Tolerance should be chosen according to the range of x. Default value is 1, which is a reasonable value if x comes from distmap.
 #' @param ext Radius of the neighborhood in pixels for the detection of neighboring objects. Higher value smoothes out small objects.
 #' @param discSize size of dilation around nuclei to create cell disk #dilation size
 
-#' @param sizeSelectionCyt
 #' @param minMax scale image channel intensities between 0 and 1
 #' @param asin perform asinh normalization on image channels
-#' @param cytNormalize a list containing desired normalization/transformation methods to be performed prior to cytoplasm identification, accepted values are 'mixMax' and/or 'asin'
+#' @param transform a list containing desired normalization/transformation methods to be performed prior to cytoplasm identification, accepted values are 'mixMax' and/or 'asin'
 
-#' @param cyt_index index of the cytoplasm marker channel. Use if cytidentification = markerModel
 
 #' @param cores = 50 number or cores for paralell processing
 #'
@@ -44,42 +41,44 @@
 
 simpleSeg <- function(#nmask parameters
     image,
-    cytIdentification = "dilate",
-    nucleus_index = 1,
-    size_selectionNuc = 10,
+    nucleus = 1,
+    
+    cellBody = "dilate",
+    
+    sizeSelection = 10,
     smooth = 1,
-    nucNormalize = c("norm99", "maxThresh"),
+    transform = c("norm99", "maxThresh", "asin"),
     tolerance = 0.01,
     ext = 1,
     discSize = 3,
     
-    #cyt1 parameters
-    
-    sizeSelectionCyt = 5,
     #minMax = FALSE,
     #asin = FALSE,
-    cytNormalize = c("minMax", "asin"),
+    #cytNormalize = c("minMax", "asin"),#use the nucNorm here Transform instead of normalize, always do minMax AFTER other transformations
+    
     
     #cyt2 parameters
-    cyt_index=2,
+    #cyt_index=2,
     
     cores = 5
 ){
-    # do nmask (if cytIdentification is null return nuc mask)
+    # do nmask (if cellBody is null return nuc mask)
     
-    if (!(cytIdentification %in% c("none", "dilate", "discModel", "markerModel"))){
-        stop("cytIdentification must be one of the following: 'none', 'dilate', 'discModel', 'markerModel'")
+    if (!(cellBody %in% c("none", "dilate", "discModel"))){
+        if (is.numeric(cellBody) == FALSE){
+            stop("cellBody must be one of the following: 'none', 'dilate', 'discModel' or the index of a cytoplasm marker channel")
+        }
     }
     whole_cell = FALSE
-    if (cytIdentification == "dilate"){
+    if (cellBody == "dilate"){
         whole_cell = TRUE
     }
     
     nmask <- nucSegParalell( image,
-                             nucleus_index = nucleus_index,
-                             size_selection = size_selectionNuc,
+                             nucleus_index = nucleus,
+                             size_selection = sizeSelection,
                              smooth = smooth,
-                             normalize = nucNormalize,
+                             normalize = transform,
                              tolerance = tolerance,
                              ext = ext,
                              whole_cell = whole_cell,
@@ -87,39 +86,39 @@ simpleSeg <- function(#nmask parameters
                              cores = cores)
     
     #if dilate
-    if (cytIdentification == "dilate"){
+    if (cellBody == "dilate"){
         return(cytomapper::CytoImageList(nmask))
     }
-    if (cytIdentification == "none"){
+    if (cellBody == "none"){
         return(cytomapper::CytoImageList(nmask))
     }
     
-    if (cytIdentification == "discModel"){
+    if (cellBody == "discModel"){
         
         cells <- cytSegParalell (nmask,
                                  image,
-                                 size_selection = sizeSelectionCyt,
+                                 size_selection = sizeSelection,
                                  smooth = smooth,
                                  discSize = discSize,
                                  #minMax = minMax,
                                  #asin = asin,
-                                 normalize = cytNormalize,
+                                 normalize = transform,
                                  cores = cores)
         
         return(cytomapper::CytoImageList(cells))
     }
     
     #if marker
-    else if (cytIdentification == "markerModel"){
+    else if (is.integer(cellBody)){
         
         cells <- cytSeg2Paralell(nmask,
                                  image,
-                                 channel = cyt_index,
-                                 size_selection = sizeSelectionCyt,
+                                 channel = cellBody,
+                                 size_selection = sizeSelection,
                                  smooth = smooth,
                                  #minMax = minMax,
                                  #asin = asin
-                                 normalize = cytNormalize,
+                                 normalize = transform,
                                  cores = cores)
         
         return(cytomapper::CytoImageList(cells))
