@@ -63,9 +63,9 @@ calc_features <- function(image, mask){
     }
     
     features <- cbind(features, 
-                      as.numeric(BImage::computeFeatures.moment(mask)[,1]), #x position of cell
-                      as.numeric(BImage::computeFeatures.moment(mask)[,2])) #y position of cell
-    features <- cbind(features,as.numeric(BImage::computeFeatures.shape(mask)[,1])) #area of cell
+                      as.numeric(EBImage::computeFeatures.moment(mask)[,1]), #x position of cell
+                      as.numeric(EBImage::computeFeatures.moment(mask)[,2])) #y position of cell
+    features <- cbind(features,as.numeric(EBImage::computeFeatures.shape(mask)[,1])) #area of cell
     
     return(features)
     
