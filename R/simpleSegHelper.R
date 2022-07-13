@@ -56,7 +56,17 @@ nucSeg <- function(image,
   
   
   
-  nuc <- image[,,nucleus_index]
+  #nuc <- image[,,nucleus_index]
+  #multiple channels may now be specified
+  
+  nuc <- image[,,nucleus_index[1]]
+  if (length(nucleus_index) > 1){
+    for (i in 1:length(nucleus_index)-1){
+      nuc <- nuc + image[,,nucleus_index[i+1]]
+    }
+    nuc <- nuc/length(nucleus_index)
+  }
+  
   
   
   nuc <- nucNormalize.helper(image, nuc, normalize)
@@ -218,7 +228,7 @@ cytSegParalell <- function(nmask,
                            #asin = FALSE,
                            normalize = c("maxThresh", "asin"),
                            cores = 5){
-  test.masks.cyt <- BiocParallel::bpmapply(CytSeg, nmask, image, size_selection = size_selection, smooth = smooth, discSize = discSize, normalize = normalize, BPPARAM  = BiocParallel::MulticoreParam(workers = cores))
+  test.masks.cyt <- BiocParallel::bpmapply(CytSeg, nmask, image, MoreArgs = list(size_selection = size_selection, smooth = smooth, discSize = discSize, normalize = normalize), BPPARAM  = BiocParallel::MulticoreParam(workers = cores))
 }
 
 list1 <- c(1,2,3,4,5)
@@ -289,5 +299,5 @@ cytSeg2Paralell <- function(nmask,
                             #asin = FALSE,
                             normalize = c("maxThresh", "asin"),
                             cores = 5){
-  test.masks.cyt <- BiocParallel::bpmapply(CytSeg2, nmask, image, channel = channel, size_selection = size_selection, smooth = smooth, normalize = normalize,  BPPARAM  = BiocParallel::MulticoreParam(workers = cores))
+  test.masks.cyt <- BiocParallel::bpmapply(CytSeg2, nmask, image, MoreArgs = list(channel = channel, size_selection = size_selection, smooth = smooth, normalize = normalize),  BPPARAM  = BiocParallel::MulticoreParam(workers = cores))
 }

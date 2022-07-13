@@ -4,7 +4,7 @@
 #' @param BPPARAM A BiocParallelParam object.
 #' @param image An image or list of images or cytoimagelist to be read into the function.
 #' @param cellBody method of cytoplasm identification. Can be "dilate", "diskModel" or "markerModel"
-#' @param nucleus the channel number of the nuclei marker
+#' @param nucleus the channel number or list of channel numbers corresponding to the nuclei marker/s
 #' @param sizeSelection minimum pixels for an object to be recognised as signal and not noise
 #' @param smooth the amount of smoothing to be applied to the nuclei marker channle
 #' @param norm99perfrom 99th percentile transformation
@@ -104,12 +104,15 @@ simpleSeg <- function(#nmask parameters
                                  #asin = asin,
                                  normalize = transform,
                                  cores = cores)
-        
-        return(cytomapper::CytoImageList(cells))
+        cellList <- NULL
+        for (i in 1:length(cells[1,1,])){
+          cellList[[i]] <- as.Image(cells[,,i])
+        }
+        return(cytomapper::CytoImageList(cellList))
     }
     
     #if marker
-    else if (is.integer(cellBody)){
+    else if (is.numeric(cellBody)){
         
         cells <- cytSeg2Paralell(nmask,
                                  image,
@@ -121,7 +124,12 @@ simpleSeg <- function(#nmask parameters
                                  normalize = transform,
                                  cores = cores)
         
-        return(cytomapper::CytoImageList(cells))
+        cellList <- NULL
+        for (i in 1:length(cells[1,1,])){
+          cellList[[i]] <- as.Image(cells[,,i])
+        }
+        
+        return(cytomapper::CytoImageList(cellList))
     }
 }
 
