@@ -13,4 +13,4 @@ Imports: knitr
 Suggests: BiocStyle
 Description: The package provides functionality to perform simple segmentation for multiplexed imaging technologies.
 License: GPL-3
-RoxygenNote: 7.1.2
+RoxygenNote: 7.2.0

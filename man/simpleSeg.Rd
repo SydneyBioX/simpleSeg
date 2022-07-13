@@ -10,7 +10,7 @@ simpleSeg(
   cellBody = "dilate",
   sizeSelection = 10,
   smooth = 1,
-  transform = c("norm99, maxThresh, asin"),
+  transform = c("norm99", "maxThresh", "asin"),
   tolerance = 0.01,
   ext = 1,
   discSize = 3,
@@ -20,9 +20,9 @@ simpleSeg(
 \arguments{
 \item{image}{An image or list of images or cytoimagelist to be read into the function.}
 
-\item{nucleus}{the channel number of the nuclei marker}
+\item{nucleus}{the channel number or list of channel numbers corresponding to the nuclei marker/s}
 
-\item{cellBody}{method of cytoplasm identification. Can be "dilate", "diskModel" or "markerModel"}
+\item{cellBody}{method of cytoplasm identification. Can be "dilate", "diskModel" or the index / list of indexes of dedicated cytoplasm markers}
 
 \item{sizeSelection}{minimum pixels for an object to be recognised as signal and not noise}
 
@@ -44,13 +44,9 @@ simpleSeg(
 
 \item{maxThresh}{scale intensities between 0 and 1}
 
-\item{nucNormalize}{a list containing desired normalization/transformation methods to be performed prior to nucleus identification, accepted values are 'max Thresh' and 'norm99perform'}
-
 \item{minMax}{scale image channel intensities between 0 and 1}
 
 \item{asin}{perform asinh normalization on image channels}
-
-\item{cyt_index}{index of the cytoplasm marker channel. Use if cellBody = markerModel}
 }
 \value{
 A list of image masks

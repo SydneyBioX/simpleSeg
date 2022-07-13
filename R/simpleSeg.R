@@ -3,7 +3,7 @@
 #' @param image An image
 #' @param BPPARAM A BiocParallelParam object.
 #' @param image An image or list of images or cytoimagelist to be read into the function.
-#' @param cellBody method of cytoplasm identification. Can be "dilate", "diskModel" or "markerModel"
+#' @param cellBody method of cytoplasm identification. Can be "dilate", "diskModel" or the index / list of indexes of dedicated cytoplasm markers
 #' @param nucleus the channel number or list of channel numbers corresponding to the nuclei marker/s
 #' @param sizeSelection minimum pixels for an object to be recognised as signal and not noise
 #' @param smooth the amount of smoothing to be applied to the nuclei marker channle

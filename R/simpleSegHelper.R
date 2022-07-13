@@ -249,7 +249,16 @@ CytSeg2 <- function(nmask,
                     #asin = FALSE
                     normalize = c("maxThresh", "asin")){
   
-  CD44 <- asinh(image[,,channel])/asinh(max(image[,,channel])) #CD44 is the target protein for this channel
+  CD44 <- image[,,channel] #CD44 is the target protein for this channel
+  
+  CD44 <- image[,,channel[1]]
+  if (length(channel) > 1){
+    for (i in 1:length(channel)-1){
+      CD44 <- CD44 + image[,,channel[i+1]]
+    }
+    CD44 <- CD44/length(channel)
+  }
+  
   
   if ("maxThresh" %in% normalize){
     CD44 <- CD44/max(CD44)
