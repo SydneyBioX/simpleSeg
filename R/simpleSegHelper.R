@@ -135,7 +135,7 @@ nucSeg <- function(image,
 
 ## Nuc Seg Parallel ##
 
-nucSegParalell <- function(image,
+nucSegParallel <- function(image,
                            nucleus_index = 1,
                            size_selection = 10,
                            smooth = 1,
@@ -228,7 +228,7 @@ CytSeg <- function(nmask,
 
 
 ## Cyt seg parallel ##
-cytSegParalell <- function(nmask,
+cytSegParallel <- function(nmask,
                            image,
                            size_selection = 5,
                            smooth = 1,
@@ -310,8 +310,8 @@ CytSeg2 <- function(nmask,
 
 
 
-## Marker model paralell ##
-cytSeg2Paralell <- function(nmask,
+## Marker model Parallel ##
+cytSeg2Parallel <- function(nmask,
                             image,
                             channel = 2,
                             size_selection = 5,

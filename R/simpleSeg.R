@@ -19,7 +19,7 @@
 #' @param transform a list containing desired normalization/transformation methods to be performed prior to cytoplasm identification, accepted values are 'maxThresh', 'norm99', 'sqrt' and/or 'asinh'
 
 
-#' @param cores = 50 number or cores for paralell processing
+#' @param cores = 50 number or cores for parallel processing
 #'
 #' @return A list of image masks
 #'
@@ -74,7 +74,7 @@ simpleSeg <- function(#nmask parameters
         whole_cell = TRUE
     }
     
-    nmask <- nucSegParalell( image,
+    nmask <- nucSegParallel( image,
                              nucleus_index = nucleus,
                              size_selection = sizeSelection,
                              smooth = smooth,
@@ -100,7 +100,7 @@ simpleSeg <- function(#nmask parameters
     
     if (cellBody == "discModel"){
         
-        cells <- cytSegParalell (nmask,
+        cells <- cytSegParallel (nmask,
                                  image,
                                  size_selection = sizeSelection,
                                  smooth = smooth,
@@ -121,7 +121,7 @@ simpleSeg <- function(#nmask parameters
     #if marker
     else if (is.numeric(cellBody)){
         
-        cells <- cytSeg2Paralell(nmask,
+        cells <- cytSeg2Parallel(nmask,
                                  image,
                                  channel = cellBody,
                                  size_selection = sizeSelection,

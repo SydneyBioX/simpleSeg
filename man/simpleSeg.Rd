@@ -36,7 +36,7 @@ simpleSeg(
 
 \item{discSize}{size of dilation around nuclei to create cell disk #dilation size}
 
-\item{cores}{= 50 number or cores for paralell processing}
+\item{cores}{= 50 number or cores for parallel processing}
 
 \item{BPPARAM}{A BiocParallelParam object.}
 
