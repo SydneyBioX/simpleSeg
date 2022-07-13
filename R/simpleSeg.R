@@ -15,8 +15,8 @@
 #' @param discSize size of dilation around nuclei to create cell disk #dilation size
 
 #' @param minMax scale image channel intensities between 0 and 1
-#' @param asin perform asinh normalization on image channels
-#' @param transform a list containing desired normalization/transformation methods to be performed prior to cytoplasm identification, accepted values are 'mixMax' and/or 'asin'
+#' @param asinh perform asinh normalization on image channels
+#' @param transform a list containing desired normalization/transformation methods to be performed prior to cytoplasm identification, accepted values are 'maxThresh', 'norm99', 'sqrt' and/or 'asinh'
 
 
 #' @param cores = 50 number or cores for paralell processing
@@ -47,14 +47,14 @@ simpleSeg <- function(#nmask parameters
     
     sizeSelection = 10,
     smooth = 1,
-    transform = c("norm99", "maxThresh", "asin"),
+    transform = c("norm99", "maxThresh", "asinh"),
     tolerance = 0.01,
     ext = 1,
     discSize = 3,
     
     #minMax = FALSE,
-    #asin = FALSE,
-    #cytNormalize = c("minMax", "asin"),#use the nucNorm here Transform instead of normalize, always do minMax AFTER other transformations
+    #asinh = FALSE,
+    #cytNormalize = c("minMax", "asinh"),#use the nucNorm here Transform instead of normalize, always do minMax AFTER other transformations
     
     
     #cyt2 parameters
@@ -87,10 +87,15 @@ simpleSeg <- function(#nmask parameters
     
     #if dilate
     if (cellBody == "dilate"){
-        return(cytomapper::CytoImageList(nmask))
+      
+      cyto.nmask <- cytomapper::CytoImageList(nmask)
+      mcols(cyto.nmask) <- S4Vectors::DataFrame(imageID = names(cyto.nmask))
+        return(cyto.nmask)
     }
     if (cellBody == "none"){
-        return(cytomapper::CytoImageList(nmask))
+      cyto.nmask <- cytomapper::CytoImageList(nmask)
+      mcols(cyto.nmask) <- S4Vectors::DataFrame(imageID = names(cyto.nmask))
+      return(cyto.nmask)
     }
     
     if (cellBody == "discModel"){
@@ -101,14 +106,16 @@ simpleSeg <- function(#nmask parameters
                                  smooth = smooth,
                                  discSize = discSize,
                                  #minMax = minMax,
-                                 #asin = asin,
+                                 #asinh = asinh,
                                  normalize = transform,
                                  cores = cores)
         cellList <- NULL
         for (i in 1:length(cells[1,1,])){
           cellList[[i]] <- as.Image(cells[,,i])
         }
-        return(cytomapper::CytoImageList(cellList))
+        cyto.nmask <- cytomapper::CytoImageList(cellList)
+        mcols(cyto.nmask) <- S4Vectors::DataFrame(imageID = names(image))
+        return(cyto.nmask)
     }
     
     #if marker
@@ -120,7 +127,7 @@ simpleSeg <- function(#nmask parameters
                                  size_selection = sizeSelection,
                                  smooth = smooth,
                                  #minMax = minMax,
-                                 #asin = asin
+                                 #asinh = asinh
                                  normalize = transform,
                                  cores = cores)
         
@@ -129,7 +136,9 @@ simpleSeg <- function(#nmask parameters
           cellList[[i]] <- as.Image(cells[,,i])
         }
         
-        return(cytomapper::CytoImageList(cellList))
+        cyto.nmask <- cytomapper::CytoImageList(cellList)
+        mcols(cyto.nmask) <- S4Vectors::DataFrame(imageID = names(image))
+        return(cyto.nmask)
     }
 }
 

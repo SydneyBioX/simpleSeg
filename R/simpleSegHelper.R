@@ -13,14 +13,20 @@ nucNormalize.helper <- function(image, nuc, normalize){
                                                                 0.99,
                                                                 na.rm = TRUE)
         
-    if ("asin" %in% normalize) {
+    if ("asinh" %in% normalize) {
       nuc <- asinh(nuc)
-    }   
+    }
+        
+        
     }
     if ("maxThresh" %in% normalize){
         nuc <- nuc/max(nuc,na.rm = TRUE)
     }
-    #output <- list(smooth, nuc)
+  
+    if ("sqrt" %in% normalize){
+      nuc <- sqrt(nuc)
+    }
+
     return(nuc)
 }
 
@@ -48,7 +54,7 @@ nucSeg <- function(image,
                    nucleus_index = 1,
                    size_selection = 10,
                    smooth = 1,
-                   normalize = c("norm99", "maxThresh", "asin"),
+                   normalize = c("norm99", "maxThresh", "asinh"),
                    tolerance = 0.01,
                    ext = 1,
                    discSize = 3,
@@ -133,7 +139,7 @@ nucSegParalell <- function(image,
                            nucleus_index = 1,
                            size_selection = 10,
                            smooth = 1,
-                           normalize = c("norm99", "maxThresh", "asin"),
+                           normalize = c("norm99", "maxThresh", "asinh"),
                            tolerance = 0.01,
                            ext = 1,
                            discSize = 3,
@@ -152,8 +158,8 @@ CytSeg <- function(nmask,
                    smooth = 1,#Does not appear to do anything here
                    discSize = 3,
                    #maxThresh = FALSE,
-                   #asin = FALSE
-                   normalize = c("maxThresh", "asin")){
+                   #asinh = FALSE
+                   normalize = c("maxThresh", "asinh")){
   
   
   kern = EBImage::makeBrush(discSize, shape='disc')
@@ -172,9 +178,12 @@ CytSeg <- function(nmask,
       image[,,i] <- image[,,i]/max(image[,,i])
     }
   }
+  if ("sqrt" %in% normalize){
+    image <- sqrt(image)
+  }
   
   
-  if ("asin" %in% normalize){
+  if ("asinh" %in% normalize){
     image <- asinh(image)
   }
   if (is.null(smooth) == FALSE){
@@ -226,7 +235,7 @@ cytSegParalell <- function(nmask,
                            discSize = 3,
                            #maxThresh = FALSE,
                            #asin = FALSE,
-                           normalize = c("maxThresh", "asin"),
+                           normalize = c("maxThresh", "asinh"),
                            cores = 5){
   test.masks.cyt <- BiocParallel::bpmapply(CytSeg, nmask, image, MoreArgs = list(size_selection = size_selection, smooth = smooth, discSize = discSize, normalize = normalize), BPPARAM  = BiocParallel::MulticoreParam(workers = cores))
 }
@@ -247,7 +256,7 @@ CytSeg2 <- function(nmask,
                     smooth = 1, #does not appear to do anything here
                     #maxThresh = FALSE,
                     #asin = FALSE
-                    normalize = c("maxThresh", "asin")){
+                    normalize = c("maxThresh", "asinh")){
   
   CD44 <- image[,,channel] #CD44 is the target protein for this channel
   
@@ -265,8 +274,11 @@ CytSeg2 <- function(nmask,
   }
   
   
-  if ("asin" %in% normalize){
+  if ("asinh" %in% normalize){
     CD44 <- asinh(CD44)
+  }
+  if ("sqrt" %in% normalize){
+    CD44 <- sqrt(CD44)
   }
   
   
@@ -306,7 +318,7 @@ cytSeg2Paralell <- function(nmask,
                             smooth = 1,
                             #maxThresh = FALSE,
                             #asin = FALSE,
-                            normalize = c("maxThresh", "asin"),
+                            normalize = c("maxThresh", "asinh"),
                             cores = 5){
   test.masks.cyt <- BiocParallel::bpmapply(CytSeg2, nmask, image, MoreArgs = list(channel = channel, size_selection = size_selection, smooth = smooth, normalize = normalize),  BPPARAM  = BiocParallel::MulticoreParam(workers = cores))
 }
