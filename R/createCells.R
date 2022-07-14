@@ -25,26 +25,19 @@
 
 
 createCells <- function(mask,
-                         image){
+                        image, 
+                        cores = 1){
     
     maskJ <- cytomapper::CytoImageList(mask)
     stackJ <- cytomapper::CytoImageList(image)
     
-    mcols(maskJ)$ImageNb <- as.character(c(1:length(mask)))
-    mcols(stackJ)$ImageNb <- as.character(c(1:length(image)))
+    imageID <- names(imageID)
+
+    cells.list <- BiocParallel::bpmapply(calc_features, stackJ, maskJ, BPPARAM  = BiocParallel::MulticoreParam(workers = cores))
+    cells.list <- lapply(cells.list, as.data.frame)
+    cells <- do.call("rbind", cells.list)
     
-    cells.list <- BiocParallel::bpmapply(calc_features, stackJ, maskJ, BPPARAM  = BiocParallel::MulticoreParam(workers = 4))
-    cells.list.df <- lapply(cells.list, as.data.frame)
-    
-    cells <- NULL
-    for (i in 1:length(cells.list.df)){
-        cells.image <- cells.list.df[[i]]
-        cells.image['image_Nb'] <- rep(i, nrow(cells.image))
-        #cells.image['core'] <- rep(image_names.subset2[i], nrow(cells.image))
-        cells <- rbind(cells, cells.image)
-    }
-    return(cells)
-    
+    cells
 }
 
 ################################ calculate features #########################################
