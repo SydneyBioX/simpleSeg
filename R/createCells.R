@@ -33,7 +33,7 @@ createCells <- function(mask,
     mcols(maskJ)$ImageNb <- as.character(c(1:length(mask)))
     mcols(stackJ)$ImageNb <- as.character(c(1:length(image)))
     
-    cells.list <- BiocParallel::bpmapply(calc_features, stackJ, maskJ, BPPARAM  = BiocParallel::MulticoreParam(workers = 40))
+    cells.list <- BiocParallel::bpmapply(calc_features, stackJ, maskJ, BPPARAM  = BiocParallel::MulticoreParam(workers = 4))
     cells.list.df <- lapply(cells.list, as.data.frame)
     
     cells <- NULL
