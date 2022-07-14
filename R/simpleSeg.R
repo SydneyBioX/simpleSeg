@@ -62,6 +62,12 @@ simpleSeg <- function(#nmask parameters
     
     cores = 5
 ){
+  
+  imageClass <- class(image)
+  if(!imageClass %in% c("list", "cytoImageList")){
+    image <- list(image)
+    names(image) <- "image"
+  }
     # do nmask (if cellBody is null return nuc mask)
     
     if (!(cellBody %in% c("none", "dilate", "discModel"))){
@@ -85,18 +91,13 @@ simpleSeg <- function(#nmask parameters
                              discSize = discSize,
                              cores = cores)
     
-    #if dilate
-    if (cellBody == "dilate"){
-      
-      cyto.nmask <- cytomapper::CytoImageList(nmask)
-      mcols(cyto.nmask) <- S4Vectors::DataFrame(imageID = names(cyto.nmask))
-        return(cyto.nmask)
-    }
-    if (cellBody == "none"){
+    #if dilate or none
+    if (cellBody %in% c("dilate", "none")){
       cyto.nmask <- cytomapper::CytoImageList(nmask)
       mcols(cyto.nmask) <- S4Vectors::DataFrame(imageID = names(cyto.nmask))
       return(cyto.nmask)
     }
+    
     
     if (cellBody == "discModel"){
         
@@ -109,17 +110,14 @@ simpleSeg <- function(#nmask parameters
                                  #asinh = asinh,
                                  normalize = transform,
                                  cores = cores)
-        cellList <- NULL
-        for (i in 1:length(cells[1,1,])){
-          cellList[[i]] <- as.Image(cells[,,i])
-        }
+
         cyto.nmask <- cytomapper::CytoImageList(cellList)
         mcols(cyto.nmask) <- S4Vectors::DataFrame(imageID = names(image))
         return(cyto.nmask)
     }
     
     #if marker
-    else if (is.numeric(cellBody)){
+    else if (any(cellBody %in% dimnames(image[[1]])[[3]])){
         
         cells <- cytSeg2Parallel(nmask,
                                  image,
@@ -131,10 +129,10 @@ simpleSeg <- function(#nmask parameters
                                  normalize = transform,
                                  cores = cores)
         
-        cellList <- NULL
-        for (i in 1:length(cells[1,1,])){
-          cellList[[i]] <- as.Image(cells[,,i])
-        }
+        # cellList <- NULL
+        # for (i in 1:length(cells[1,1,])){
+        #   cellList[[i]] <- as.Image(cells[,,i])
+        # }
         
         cyto.nmask <- cytomapper::CytoImageList(cellList)
         mcols(cyto.nmask) <- S4Vectors::DataFrame(imageID = names(image))
