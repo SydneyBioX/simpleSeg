@@ -24,9 +24,9 @@
 ############################## Tissue Mask Function ########################################
 calcTissueMaskParallel <- function(
     image,
-    tissue_index,
+    tissue_index = NULL,
     size_selection = 10,
-    cores = 50
+    cores = 1
 ){
     result <- BiocParallel::bplapply(image, calcTissueMask, tissue_index = tissue_index, size_selection = size_selection, BPPARAM  = BiocParallel::MulticoreParam(workers = cores))
     return(result)
@@ -41,41 +41,36 @@ calcTissueMask <- function(image,
                              # a size selection to remove extremely small cells/large noise that disrupts the calculation on tissue mask.
 ){
     
-    tissue1 <- image[,,tissue_index[1]]
+     # replace outside of tissue with NA
     
-    tissue2 <- image[,,tissue_index[2]]
-    
-    tissue3 <- image[,,tissue_index[3]]
-    
-    
-    # replace outside of circle with NA
-    
-    circle <- tissue1 + tissue2 + tissue3 # add intesities of these markers to try and highlight the circle structure.
+    if(is.null(tissue_index)) tissue_index <- seq_len(dim(image)[3])
+  
+    tissue <- apply(image[,,tissue_index], c(1,2), mean) # add intesities of these markers to try and highlight the tissue structure.
     
     
-    circle <- EBImage::normalize(log10(circle+0.01),
+    tissue <- EBImage::normalize(log10(tissue+0.01),
                                  ft = c(0,1))
     
-    circle_otsu <- EBImage::otsu(circle,
+    tissue_otsu <- EBImage::otsu(tissue,
                         range = c(0,1))
     
-    circle <- circle > circle_otsu
+    tissue <- tissue > tissue_otsu
     
     
     # Do a size selection 
-    circle_label <- EBImage::bwlabel(circle) 
-    tcircle <- table(circle_label)
-    circle[circle_label%in%names(which(tcircle<=size_selection))] <- 0 # size selection of 10.
+    tissue_label <- EBImage::bwlabel(tissue) 
+    ttissue <- table(tissue_label)
+    tissue[tissue_label%in%names(which(ttissue<=size_selection))] <- 0 # size selection of 10.
     
     # extract the convex hull
-    nonZero <- as.data.frame(which(circle>0,2))
+    nonZero <- as.data.frame(which(tissue>0,2))
     colnames(nonZero) <- c("y", "x")
     
     ch <- grDevices::chull(nonZero[, c("x", "y")])
     poly <- nonZero[, c("x", "y")][rev(ch),]
     colnames(poly) <- c("x", "y")
     ow <- spatstat.geom::owin(xrange = range(nonZero$x), yrange = range(nonZero$y), poly = poly)
-    tissueMask <- as.matrix(spatstat.geom::as.mask(ow, xy=list(y = 1:nrow(circle), x = 1:ncol(circle)))) # this is all the points inside the convex hull
+    tissueMask <- as.matrix(spatstat.geom::as.mask(ow, xy=list(y = 1:nrow(tissue), x = 1:ncol(tissue)))) # this is all the points inside the convex hull
     
     
     
