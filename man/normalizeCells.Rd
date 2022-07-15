@@ -6,12 +6,13 @@
 \usage{
 normalizeCells(
   cells,
-  markers,
-  isSCE = FALSE,
-  assayName = NULL,
-  imageNb = NULL,
+  markers = NULL,
+  assayIn = NULL,
+  assayOut = "norm",
+  imageID = "imageID",
   transformation = NULL,
-  method = NULL
+  method = NULL,
+  cores = 1
 )
 }
 \arguments{
@@ -19,15 +20,15 @@ normalizeCells(
 
 \item{markers}{A list containing the names of cell markers which will be normalized/transformed}
 
-\item{isSCE}{If the input is a SCE or SE, this must be set to true}
+\item{assayIn}{If input is a SCE or SE with multiple assays, specify the assay to be normalized/transformed}
 
-\item{assayName}{If input is a SCE or SE with multiple assays, specify the assay to be normalized/transformed}
+\item{assayOut}{If input is a SCE or SE, the new of the normalized data.}
 
-\item{imageNb}{If input is a SCE or SE, this is the name of the image number variable in order to stratify cells correctly}
+\item{imageID}{If input is a SCE or SE, this is the name of the image ID variable in order to stratify cells correctly}
 
-\item{transformation}{The transformation to be performed, default is NULL, accepted values: "asinh", "sqrt", "log"}
+\item{transformation}{The transformation to be performed, default is NULL, accepted values: 'asinh', 'sqrt', 'log'}
 
-\item{method}{The normalization method to be performed, default is NULL, accepted values: "meandiv", "99perc", "1stPC"}
+\item{method}{The normalization method to be performed, default is NULL, accepted values: 'meandiv', '99perc', '1stPC'}
 }
 \value{
 returns a dataframe with individual cells as rows and features as columns
@@ -37,6 +38,6 @@ Normalizes and transforms cell data in preparation for clustering (accepts dataf
 }
 \examples{
 
-cells.normalized <- normalizeCells(cells = cells.sce, markers = c("SMA", "CD44", "CD45", "cyt-19") isSCE = TRUE, assayName = "cells", imageNb = "ImageID", transformation = "asinh", method = "99perc")
+cells.normalized <- normalizeCells(cells = cells.sce, markers = c('SMA', 'CD44', 'CD45', 'cyt-19') isSCE = TRUE, assayName = 'cells', imageNb = 'ImageID', transformation = 'asinh', method = '99perc')
 
 }

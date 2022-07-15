@@ -30,8 +30,6 @@
 #' @importFrom terra predict
 #' @import cytomapper
 #' @importFrom stats prcomp quantile lm
-#' @importFrom BiocSingular RandomParam
-#' @importFrom BiocNeighbors AnnoyParam
 #' @importFrom S4Vectors mcols
 simpleSeg <- function(image,
                       nucleus = 1,

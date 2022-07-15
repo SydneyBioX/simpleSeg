@@ -17,9 +17,6 @@
 #' @export normalizeCells
 #' @rdname normalizeCells
 #'
-#' @importFrom BiocParallel MulticoreParam
-#' @importFrom BiocSingular RandomParam
-#' @importFrom BiocNeighbors AnnoyParam
 normalizeCells <- function(cells,
                            markers = NULL,
                            assayIn = NULL,

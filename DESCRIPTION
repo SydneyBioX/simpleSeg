@@ -8,7 +8,7 @@ Maintainer: Ellis Patrick <ellis.patrick@sydney.edu.au>
 VignetteBuilder: knitr
 Encoding: UTF-8
 biocViews: Classification, Survival
-Depends: R (>= 4.1.0), BiocParallel, EBImage, parallel, terra, cytomapper, stats, BiocSingular, BiocNeighbors, spatstat
+Depends: R (>= 4.1.0), BiocParallel, EBImage, parallel, terra, cytomapper, stats, spatstat
 Imports: knitr
 Suggests: BiocStyle
 Description: The package provides functionality to perform simple segmentation for multiplexed imaging technologies.

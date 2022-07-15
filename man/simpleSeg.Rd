@@ -14,7 +14,7 @@ simpleSeg(
   tolerance = 0.01,
   ext = 1,
   discSize = 3,
-  cores = 5
+  cores = 1
 )
 }
 \arguments{
@@ -22,7 +22,7 @@ simpleSeg(
 
 \item{nucleus}{the channel number or list of channel numbers corresponding to the nuclei marker/s}
 
-\item{cellBody}{method of cytoplasm identification. Can be "dilate", "diskModel" or the index / list of indexes of dedicated cytoplasm markers}
+\item{cellBody}{method of cytoplasm identification. Can be 'dilate', 'diskModel' or the index / list of indexes of dedicated cytoplasm markers}
 
 \item{sizeSelection}{minimum pixels for an object to be recognised as signal and not noise}
 
@@ -36,7 +36,7 @@ simpleSeg(
 
 \item{discSize}{size of dilation around nuclei to create cell disk #dilation size}
 
-\item{cores}{= 50 number or cores for parallel processing}
+\item{cores}{The number or cores for parallel processing}
 
 \item{BPPARAM}{A BiocParallelParam object.}
 

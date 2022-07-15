@@ -4,14 +4,19 @@
 \alias{calcTissueMaskParallel}
 \title{Calculates the tissue mask of a given image}
 \usage{
-calcTissueMaskParallel(image, tissue_index, size_selection = 10, cores = 50)
+calcTissueMaskParallel(
+  image,
+  tissue_index = NULL,
+  size_selection = 10,
+  BPPARAM = BPPARAM
+)
 }
 \arguments{
 \item{image}{A multiplexed image or list of multiplexed images, can be a CytoImageList}
 
 \item{tissue_index}{a numerical index that corresponds to the tissue markers in the image object.}
 
-\item{cores}{The number of parallel processing cores to be used}
+\item{BPPARAM}{The number of parallel processing cores to be used}
 }
 \value{
 Tissue masks of given image/s (area of the image/s containing tissue)
