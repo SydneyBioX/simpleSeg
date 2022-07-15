@@ -57,17 +57,13 @@ normalizeCells <- function(cells,
     # Methods
     if ("meandiv" %in% method) {
         for (i in unique(cells$imageID)) {
-            cells[cells[[imageID]] == i, markers] <- sweep(cells[cells[[imageID]] == i, markers], 2, apply(cells[cells[[imageID]] == i, markers], 2, mean, 0.2),
+            markerMeans <- apply(cells[cells[[imageID]] == i, markers], 2, mean, 0.2)
+            markerMeans[markerMeans <= 0] <- 1
+            cells[cells[[imageID]] == i, markers] <- sweep(cells[cells[[imageID]] == i, markers], 2, markerMeans,
                                                            "/")
         }
     }
     if ("99perc" %in% method) {
-        cells[, markers] <- data.frame(apply(cells[, markers], 2, function(x) {
-            q <- quantile(x, 0.99)
-            if(q<=0) q <- 1
-            pmin(x, q) / q
-        }))
-        
         for (i in unique(cells$imageID)) {
             cells[cells[[imageID]] == i, markers] <- apply(cells[cells[[imageID]] == i, markers], 2, function(x) {
                 q <- quantile(x, 0.99)
@@ -90,6 +86,7 @@ normalizeCells <- function(cells,
             cells[, i] <- pmax(resid(fit) +
                                    int, 0)
             q <- quantile(cells[, i], 0.99)
+            if(q <= 0) q <- 1
             cells[, i] <- pmin(cells[, i], q) / q
         }
         
