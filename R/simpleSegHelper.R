@@ -1,5 +1,4 @@
 ## Nuc Normalization ##
-
 nucNormalize.helper <- function(image, nuc, normalize) {
   # if ('autoS' %in% normalize){ smooth <- autosmooth(image, smooth, 9, 4) #
   # adjusting the smoothing parameter for low intensity images }
@@ -42,6 +41,7 @@ nucNormalize.helper <- function(image, nuc, normalize) {
 ## Segmentation functinos ##
 
 ## NucSeg ##
+#' @importFrom EBImage Image
 nucSeg <- function(image,
                    nucleus_index = 1,
                    size_selection = 10,
@@ -118,9 +118,9 @@ nucSeg <- function(image,
   disk1 <- cell1 - nmask1 > 0
   disk1 <- EBImage::watershed(disk1)
   if (whole_cell) {
-    return(cell1)
+    return(EBImage::Image(cell1))
   } else {
-    return(nmask1)
+    return(EBImage::Image(nmask1))
   }
   
   
@@ -227,7 +227,7 @@ CytSeg <- function(nmask,
   justdisk <- EBImage::propagate(disk, nmask, cell)
   
   # output<-list(cmask4,cmaskdisk, cell1, disk, justdisk)
-  return(cmask4)
+  return(EBImage::Image(cmask4))
   
 }
 
@@ -321,7 +321,7 @@ CytSeg2 <- function(nmask,
   
   cmask4 <- EBImage::propagate(CD44pred, nmask, cell)
   
-  return(cmask4)
+  return(EBImage::Image(cmask4))
 }
 
 

@@ -32,6 +32,7 @@
 #' @importFrom stats prcomp quantile lm
 #' @importFrom BiocSingular RandomParam
 #' @importFrom BiocNeighbors AnnoyParam
+#' @importFrom S4Vectors mcols
 simpleSeg <- function(image,
                       nucleus = 1,
                       cellBody = "dilate",
@@ -80,7 +81,7 @@ simpleSeg <- function(image,
   # if dilate or none
   if (cellBody %in% c("dilate", "none")) {
     cyto.nmask <- cytomapper::CytoImageList(nmask)
-    mcols(cyto.nmask) <-
+    S4Vectors::mcols(cyto.nmask) <-
       S4Vectors::DataFrame(imageID = names(cyto.nmask))
     return(cyto.nmask)
   }
@@ -97,7 +98,7 @@ simpleSeg <- function(image,
     )
     
     cyto.nmask <- cytomapper::CytoImageList(cellList)
-    mcols(cyto.nmask) <-
+    S4Vectors::mcols(cyto.nmask) <-
       S4Vectors::DataFrame(imageID = names(image))
     return(cyto.nmask)
   }
@@ -117,7 +118,7 @@ simpleSeg <- function(image,
     # as.Image(cells[,,i]) }
     
     cyto.nmask <- cytomapper::CytoImageList(cellList)
-    mcols(cyto.nmask) <-
+    S4Vectors::mcols(cyto.nmask) <-
       S4Vectors::DataFrame(imageID = names(image))
     return(cyto.nmask)
   }
