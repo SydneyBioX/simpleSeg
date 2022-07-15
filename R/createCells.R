@@ -24,7 +24,10 @@
 ################## Create cells ########################
 
 
-createCells <- function(mask, image, BPPARAM = BPPARAM) {
+createCells <- function(mask, image, cores = 1) {
+    
+    BPPARAM <- generateBPParam(cores)
+    
     maskJ <- cytomapper::CytoImageList(mask)
     stackJ <- cytomapper::CytoImageList(image)
     
