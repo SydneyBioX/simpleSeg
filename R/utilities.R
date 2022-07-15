@@ -1,4 +1,5 @@
 #' @importFrom BiocParallel SerialParam SnowParam MulticoreParam bpparam
+#' @export
 generateBPParam <- function(cores = 1){
 
 seed <- .Random.seed[1]

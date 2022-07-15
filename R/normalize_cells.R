@@ -2,9 +2,9 @@
 #'
 #' @param cells A Dataframe of singlecellexperement or spatialexperiment containing cells and features to be normalized/transformed
 #' @param markers A list containing the names of cell markers which will be normalized/transformed
-#' @param isSCE If the input is a SCE or SE, this must be set to true
-#' @param assayName If input is a SCE or SE with multiple assays, specify the assay to be normalized/transformed
-#' @param imageNb If input is a SCE or SE, this is the name of the image number variable in order to stratify cells correctly
+#' @param assayIn If input is a SCE or SE with multiple assays, specify the assay to be normalized/transformed
+#' @param assayOut If input is a SCE or SE, the new of the normalized data.
+#' @param imageID If input is a SCE or SE, this is the name of the image ID variable in order to stratify cells correctly
 #' @param transformation The transformation to be performed, default is NULL, accepted values: 'asinh', 'sqrt', 'log'
 #' @param method The normalization method to be performed, default is NULL, accepted values: 'meandiv', '99perc', '1stPC'
 #'
@@ -21,21 +21,29 @@
 #' @importFrom BiocSingular RandomParam
 #' @importFrom BiocNeighbors AnnoyParam
 normalizeCells <- function(cells,
-                           markers,
-                           isSCE = FALSE,
-                           assayName = NULL,
-                           imageNb = NULL,
+                           markers = NULL,
+                           assayIn = NULL,
+                           assayOut = "norm",
+                           imageID = "imageID",
                            transformation = NULL,
-                           method = NULL) {
+                           method = NULL,
+                           cores = 1) {
+    
+    
+    sce <- NULL
     # handeling sce and se
-    if (isSCE == TRUE) {
+    if (is(cells, "SingleCellExperiment")|is(cells, "SpatialExperiment")) {
+        sce <- cells
         if (is.null(assayName)) {
-            cellsdf <- data.frame(t(assay(cells)))
+            cells <- as.data.frame(t(assay(sce)))
         } else {
-            cellsdf <- data.frame(t(cells@assays@data@listData[[assayName]]))
+            cells <- as.data.frame(t(assay(sce,assayName)))
         }
-        cellsdf$imageID <- cells@colData@listData[[imageNb]]
-        cells <- cellsdf
+        cells[[imageID]] <- colData(sce)[[imageID]]
+    }
+    
+    if(is.null(markers)) {
+        markers <- colnames(cells)[!colnames(cells)%in%imageID]
     }
     
     # Transformations
@@ -48,20 +56,22 @@ normalizeCells <- function(cells,
     if (transformation == "log") {
         cells[, markers] <- log10(cells[, markers])
     }
+    
     # Methods
-    if (method == "meandiv") {
+    if ("meandiv" %in% method) {
         for (i in 1:length(unique(cells$imageID))) {
-            cells[cells$imageID == i, markers] <- sweep(cells[cells$imageID == i, markers], 2, apply(cells[cells$imageID == i, markers], 2, mean, 0.2),
+            cells[cells[[imageID]] == i, markers] <- sweep(cells[cells[[imageID]] == i, markers], 2, apply(cells[cells[[imageID]] == i, markers], 2, mean, 0.2),
                                                         "/")
         }
     }
-    if (method == "99perc") {
+    if ("99perc" %in% method) {
         cells[, markers] <- data.frame(apply(cells[, markers], 2, function(x) {
             q <- quantile(x, 0.99)
             pmin(x, q) / q
         }))
     }
-    if (method == "1stPC") {
+    
+    if ("1stPC" %in% method) {
         pca <- prcomp(cells[, markers])
         
         PC1 <- pca$x[, "PC1"]
@@ -79,25 +89,57 @@ normalizeCells <- function(cells,
         
         
     }
-    # if (method == 'scMerge'){ #sc merge ncores <- 64 use_bpparam <-
-    # BiocParallel::MulticoreParam(workers = ncores) use_bsparam <-
-    # BiocSingular::RandomParam() use_bnparam <- BiocNeighbors::AnnoyParam()
-    # dat_sub <- dat[sample(nrow(dat), 500000), ] ctl_genes <- rownames(sce)
-    # exprsMat <- t(cells[, markers]) colnames(exprsMat) <-
-    # seq_len(ncol(exprsMat)) scMerge_res <- scMerge2(exprsMat = exprsMat, #the
-    # exprs matrix to be normalised batch = cells$imageID, # batch labels
-    # cellTypes = NULL, # set NULL clustering will be performed within
-    # scMerge2... can also try the published cell type labels, which will match
-    # between the cell types use_bpparam = use_bpparam, use_bsparam =
-    # use_bsparam, use_bnparam = use_bnparam, ruvK = 2, # Number of unwanted
-    # variation to be removed ctl = markers, # negative control genes
-    # k_psuedoBulk = 5, # Number of pseudo bulk to be created for each cell
-    # type each batch k_celltype = 20, # Number of neighbours when perform
-    # graph clustering pseudoBulk_fn = create_pseudoBulk, # ways of
-    # constructing pseudo bulk ncores = ncores, chosen.hvg = markers, #Highly
-    # variable genes to be used to identify pseudo-replicates... since IMC has
-    # very few features, using all features.  cosineNorm = F, return_subset =
-    # FALSE, normalised = T) dat_norm <- as.data.frame(scMerge_res$newY)
-    # cells[, markers] <- dat_norm }
+    
+    if (method == 'scMerge'){
+    if(!requireNamespace("scMerge", quietly = TRUE))
+        stop("The package 'scMerge' could not be found. Please install it.")
+    if(!requireNamespace("scMerge", quietly = TRUE))
+            stop("The package 'scMerge' could not be found. Please install it.")
+    if(!requireNamespace("scMerge", quietly = TRUE))
+            stop("The package 'scMerge' could not be found. Please install it.")
+        use_bpparam <- generateBPParam(cores)
+        use_bsparam <- BiocSingular::RandomParam()
+        use_bnparam <- BiocNeighbors::AnnoyParam()
+        dat_sub <- dat[sample(nrow(dat), 500000),]
+        ctl_genes <- rownames(sce)
+        exprsMat <- t(cells[, markers])
+        colnames(exprsMat) <- seq_len(ncol(exprsMat))
+        scMerge_res <-
+            scMerge2(
+                exprsMat = exprsMat,
+                #the exprs matrix to be normalised
+                batch = cells[[imageID]],
+                # batch labels
+                cellTypes = NULL,
+                # set NULL clustering will be performed within scMerge2... can also try the published cell type labels, which will matchetween the cell types
+                use_bpparam = use_bpparam,
+                use_bsparam = use_bsparam,
+                use_bnparam = use_bnparam,
+                ruvK = 2,
+                # Number of unwanted variation to be removed
+                ctl = markers,
+                # negative control genes
+                k_psuedoBulk = 5,
+                # Number of pseudo bulk to be created for each cell type each batch
+                k_celltype = 20,
+                # Number of neighbours when performgraph clustering
+                pseudoBulk_fn = create_pseudoBulk,
+                # ways of onstructing pseudo bulk
+                ncores = ncores,
+                chosen.hvg = markers,
+                #Highlyvariable genes to be used to identify pseudo-replicates... since IMC has  very few features, using all features.
+                cosineNorm = F,
+                return_subset = FALSE,
+                normalised = T
+            )
+        dat_norm <- as.data.frame(scMerge_res$newY)
+        cells[, markers] <- dat_norm
+    }
+    
+    if(is(sce, "SingleCellExperiment")|is(cells, "SpatialExperiment")){
+        assay(sce, assayOut) <- cells
+        return(sce)
+    }
+    
     return(cells)
 }

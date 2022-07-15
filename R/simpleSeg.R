@@ -28,7 +28,7 @@
 #' @importFrom BiocParallel SerialParam bplapply MulticoreParam bpmapply
 #' @importFrom EBImage gblur otsu bwlabel makeBrush filter2 watershed dilate distmap propagate
 #' @importFrom terra predict
-#' @importFrom cytomapper CytoImageList
+#' @import cytomapper
 #' @importFrom stats prcomp quantile lm
 #' @importFrom BiocSingular RandomParam
 #' @importFrom BiocNeighbors AnnoyParam
