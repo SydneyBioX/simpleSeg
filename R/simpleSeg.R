@@ -85,7 +85,6 @@ simpleSeg <- function(image,
     return(cyto.nmask)
   }
   
-  
   if (cellBody == "discModel") {
     cells <- cytSegParallel(
       nmask,
