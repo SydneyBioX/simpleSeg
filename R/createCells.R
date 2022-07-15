@@ -28,7 +28,7 @@ createCells <- function(mask, image, BPPARAM = BPPARAM) {
     maskJ <- cytomapper::CytoImageList(mask)
     stackJ <- cytomapper::CytoImageList(image)
     
-    imageID <- names(imageID)
+    imageID <- names(image)
     
     cells.list <- BiocParallel::bpmapply(calc_features,
                                          stackJ,
