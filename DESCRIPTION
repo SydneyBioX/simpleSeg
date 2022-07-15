@@ -1,7 +1,7 @@
 Package: simpleSeg
 Type: Package
 Title: A package to perform simple cell segmentation
-Version: 0.0.1
+Version: 0.0.2
 Date: 2022-04-21
 Author: Alexander Nicholls, Nicolas Canete, Ellis Patrick
 Maintainer: Ellis Patrick <ellis.patrick@sydney.edu.au>
