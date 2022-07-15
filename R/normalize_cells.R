@@ -87,7 +87,7 @@ normalizeCells <- function(cells,
         
     }
     
-    if (method == 'scMerge'){
+    if ('scMerge' %in% method){
         if(!requireNamespace("scMerge", quietly = TRUE))
             stop("The package 'scMerge' could not be found. Please install it.")
         if(!requireNamespace("scMerge", quietly = TRUE))
