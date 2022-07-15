@@ -64,6 +64,7 @@ normalizeCells <- function(cells,
     if ("99perc" %in% method) {
         cells[, markers] <- data.frame(apply(cells[, markers], 2, function(x) {
             q <- quantile(x, 0.99)
+            if(q<=0) q <- 1
             pmin(x, q) / q
         }))
     }
