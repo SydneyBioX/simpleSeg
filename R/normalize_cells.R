@@ -31,7 +31,7 @@ normalizeCells <- function(cells,
     # handeling sce and se
     if (is(cells, "SingleCellExperiment")|is(cells, "SpatialExperiment")) {
         sce <- cells
-        if (is.null(assayName)) {
+        if (is.null(assayIn)) {
             cells <- as.data.frame(t(assay(sce)))
         } else {
             cells <- as.data.frame(t(assay(sce,assayName)))
