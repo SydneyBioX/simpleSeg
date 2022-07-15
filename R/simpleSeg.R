@@ -44,7 +44,7 @@ simpleSeg <- function(image,
                       discSize = 3,
                       cores = 1) {
   imageClass <- class(image)
-  if (!imageClass %in% c("list", "cytoImageList")) {
+  if (!imageClass %in% c("list", "CytoImageList")) {
     image <- list(image)
     names(image) <- "image"
   }
