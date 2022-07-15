@@ -53,16 +53,8 @@ nucSeg <- function(image,
                    whole_cell = TRUE) {
   # nuc <- image[,,nucleus_index] multiple channels may now be specified
   
-  nuc <- image[, , nucleus_index[1]]
-  if (length(nucleus_index) >
-      1) {
-    for (i in 1:length(nucleus_index) -
-         1) {
-      nuc <- nuc + image[, , nucleus_index[i + 1]]
-    }
-    nuc <- nuc / length(nucleus_index)
-  }
-  
+  nuc <- image[, , nucleus_index]
+  nuc <- apply(nuc, c(1,2), mean)
   
   
   nuc <- nucNormalize.helper(image, nuc, normalize)
