@@ -138,7 +138,7 @@ nucSegParallel <- function(image,
                            ext = 1,
                            discSize = 3,
                            whole_cell = TRUE,
-                           cores = 5) {
+                           BPPARAM = BiocParallel::SerialParam()) {
   output <- BiocParallel::bplapply(
     image,
     nucSeg,
@@ -150,7 +150,7 @@ nucSegParallel <- function(image,
     smooth = smooth,
     normalize = normalize,
     whole_cell = whole_cell,
-    BPPARAM = BiocParallel::MulticoreParam(workers = cores)
+    BPPARAM = BPPARAM
   )
 }
 
@@ -239,7 +239,7 @@ cytSegParallel <- function(nmask,
                            smooth = 1,
                            discSize = 3,
                            normalize = c("maxThresh", "asinh"),
-                           cores = 5) {
+                           BPPARAM = BiocParallel::SerialParam()) {
   test.masks.cyt <- BiocParallel::bpmapply(
     CytSeg,
     nmask,
@@ -250,7 +250,7 @@ cytSegParallel <- function(nmask,
       discSize = discSize,
       normalize = normalize
     ),
-    BPPARAM = BiocParallel::MulticoreParam(workers = cores)
+    BPPARAM = BPPARAM
   )
 }
 
@@ -333,7 +333,7 @@ cytSeg2Parallel <- function(nmask,
                             size_selection = 5,
                             smooth = 1,
                             normalize = c("maxThresh", "asinh"),
-                            cores = 5) {
+                            BPPARAM = BiocParallel::SerialParam()) {
   test.masks.cyt <- BiocParallel::bpmapply(
     CytSeg2,
     nmask,
@@ -344,6 +344,6 @@ cytSeg2Parallel <- function(nmask,
       smooth = smooth,
       normalize = normalize
     ),
-    BPPARAM = BiocParallel::MulticoreParam(workers = cores)
+    BPPARAM = BPPARAM
   )
 }

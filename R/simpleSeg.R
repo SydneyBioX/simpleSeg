@@ -62,6 +62,8 @@ simpleSeg <- function(image,
     whole_cell <- TRUE
   }
   
+  BPPARAM <- generateBPParam(cores)
+  
   nmask <- nucSegParallel(
     image,
     nucleus_index = nucleus,
@@ -72,7 +74,7 @@ simpleSeg <- function(image,
     ext = ext,
     whole_cell = whole_cell,
     discSize = discSize,
-    cores = cores
+    BPPARAM = BPPARAM
   )
   
   # if dilate or none
@@ -92,7 +94,7 @@ simpleSeg <- function(image,
       smooth = smooth,
       discSize = discSize,
       normalize = transform,
-      cores = cores
+      BPPARAM = BPPARAM
     )
     
     cyto.nmask <- cytomapper::CytoImageList(cellList)
@@ -109,7 +111,7 @@ simpleSeg <- function(image,
       size_selection = sizeSelection,
       smooth = smooth,
       normalize = transform,
-      cores = cores
+      BPPARAM = BPPARAM
     )
     
     # cellList <- NULL for (i in 1:length(cells[1,1,])){ cellList[[i]] <-

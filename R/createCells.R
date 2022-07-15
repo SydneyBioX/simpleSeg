@@ -24,7 +24,7 @@
 ################## Create cells ########################
 
 
-createCells <- function(mask, image, cores = 1) {
+createCells <- function(mask, image, BPPARAM = BPPARAM) {
     maskJ <- cytomapper::CytoImageList(mask)
     stackJ <- cytomapper::CytoImageList(image)
     
@@ -33,7 +33,7 @@ createCells <- function(mask, image, cores = 1) {
     cells.list <- BiocParallel::bpmapply(calc_features,
                                          stackJ,
                                          maskJ,
-                                         BPPARAM = BiocParallel::MulticoreParam(workers = cores))
+                                         BPPARAM = BPPARAM)
     cells.list <- lapply(cells.list, as.data.frame)
     cells <- do.call("rbind", cells.list)
     

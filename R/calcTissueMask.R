@@ -2,7 +2,7 @@
 #'
 #' @param image A multiplexed image or list of multiplexed images, can be a CytoImageList
 #' @param tissue_index a numerical index that corresponds to the tissue markers in the image object.
-#' @param cores The number of parallel processing cores to be used
+#' @param BPPARAM The number of parallel processing cores to be used
 #'
 #' @return Tissue masks of given image/s (area of the image/s containing tissue)
 
@@ -27,14 +27,14 @@ calcTissueMaskParallel <-
     function(image,
              tissue_index = NULL,
              size_selection = 10,
-             cores = 1) {
+             BPPARAM = BPPARAM) {
         
         result <- BiocParallel::bplapply(
             image,
             calcTissueMask,
             tissue_index = tissue_index,
             size_selection = size_selection,
-            BPPARAM = BiocParallel::MulticoreParam(workers = cores)
+            BPPARAM = BPPARAM
         )
         return(result)
     }
