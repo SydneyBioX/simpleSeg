@@ -56,7 +56,7 @@ normalizeCells <- function(cells,
     
     # Methods
     if ("meandiv" %in% method) {
-        for (i in 1:length(unique(cells$imageID))) {
+        for (i in unique(cells$imageID)) {
             cells[cells[[imageID]] == i, markers] <- sweep(cells[cells[[imageID]] == i, markers], 2, apply(cells[cells[[imageID]] == i, markers], 2, mean, 0.2),
                                                            "/")
         }
@@ -67,6 +67,14 @@ normalizeCells <- function(cells,
             if(q<=0) q <- 1
             pmin(x, q) / q
         }))
+        
+        for (i in unique(cells$imageID)) {
+            cells[cells[[imageID]] == i, markers] <- apply(cells[cells[[imageID]] == i, markers], 2, function(x) {
+                q <- quantile(x, 0.99)
+                if(q<=0) q <- 1
+                pmin(x, q) / q
+            })
+        }
     }
     
     if ("1stPC" %in% method) {
