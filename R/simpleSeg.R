@@ -3,7 +3,7 @@
 #' @param image An image
 #' @param BPPARAM A BiocParallelParam object.
 #' @param image An image or list of images or cytoimagelist to be read into the function.
-#' @param cellBody method of cytoplasm identification. Can be "dilate", "diskModel" or the index / list of indexes of dedicated cytoplasm markers
+#' @param cellBody method of cytoplasm identification. Can be 'dilate', 'diskModel' or the index / list of indexes of dedicated cytoplasm markers
 #' @param nucleus the channel number or list of channel numbers corresponding to the nuclei marker/s
 #' @param sizeSelection minimum pixels for an object to be recognised as signal and not noise
 #' @param smooth the amount of smoothing to be applied to the nuclei marker channle
@@ -20,7 +20,7 @@
 #' @return A list of image masks
 #'
 #' @examples
-#' 
+#'
 #' 1+1
 #'
 #' @export simpleSeg
@@ -29,104 +29,95 @@
 #' @importFrom EBImage gblur otsu bwlabel makeBrush filter2 watershed dilate distmap propagate
 #' @importFrom terra predict
 #' @importFrom cytomapper CytoImageList
-#' @importFrom stats prcomp quantile lm 
+#' @importFrom stats prcomp quantile lm
 #' @importFrom BiocSingular RandomParam
 #' @importFrom BiocNeighbors AnnoyParam
-simpleSeg <- function(#nmask parameters
-    image,
-    nucleus = 1,
-    
-    cellBody = "dilate",
-    
-    sizeSelection = 10,
-    smooth = 1,
-    transform = c("norm99", "maxThresh", "asinh"),
-    tolerance = 0.01,
-    ext = 1,
-    discSize = 3,
-    cores = 1
-){
-  
+simpleSeg <- function(image,
+                      nucleus = 1,
+                      cellBody = "dilate",
+                      sizeSelection = 10,
+                      smooth = 1,
+                      transform = c("norm99", "maxThresh", "asinh"),
+                      tolerance = 0.01,
+                      ext = 1,
+                      discSize = 3,
+                      cores = 1) {
   imageClass <- class(image)
-  if(!imageClass %in% c("list", "cytoImageList")){
+  if (!imageClass %in% c("list", "cytoImageList")) {
     image <- list(image)
     names(image) <- "image"
   }
-    # do nmask (if cellBody is null return nuc mask)
-    
-    if (!(cellBody %in% c("none", "dilate", "discModel"))){
-        if (is.numeric(cellBody) == FALSE){
-            stop("cellBody must be one of the following: 'none', 'dilate', 'discModel' or the index of a cytoplasm marker channel")
-        }
+  # do nmask (if cellBody is null return nuc mask)
+  
+  if (!(cellBody %in% c("none", "dilate", "discModel"))) {
+    if (is.numeric(cellBody) ==
+        FALSE) {
+      stop(
+        "cellBody must be one of the following: 'none', 'dilate', 'discModel' or the index of a cytoplasm marker channel"
+      )
     }
-    whole_cell = FALSE
-    if (cellBody == "dilate"){
-        whole_cell = TRUE
-    }
+  }
+  whole_cell <- FALSE
+  if (cellBody == "dilate") {
+    whole_cell <- TRUE
+  }
+  
+  nmask <- nucSegParallel(
+    image,
+    nucleus_index = nucleus,
+    size_selection = sizeSelection,
+    smooth = smooth,
+    normalize = transform,
+    tolerance = tolerance,
+    ext = ext,
+    whole_cell = whole_cell,
+    discSize = discSize,
+    cores = cores
+  )
+  
+  # if dilate or none
+  if (cellBody %in% c("dilate", "none")) {
+    cyto.nmask <- cytomapper::CytoImageList(nmask)
+    mcols(cyto.nmask) <-
+      S4Vectors::DataFrame(imageID = names(cyto.nmask))
+    return(cyto.nmask)
+  }
+  
+  
+  if (cellBody == "discModel") {
+    cells <- cytSegParallel(
+      nmask,
+      image,
+      size_selection = sizeSelection,
+      smooth = smooth,
+      discSize = discSize,
+      normalize = transform,
+      cores = cores
+    )
     
-    nmask <- nucSegParallel( image,
-                             nucleus_index = nucleus,
-                             size_selection = sizeSelection,
-                             smooth = smooth,
-                             normalize = transform,
-                             tolerance = tolerance,
-                             ext = ext,
-                             whole_cell = whole_cell,
-                             discSize = discSize,
-                             cores = cores)
+    cyto.nmask <- cytomapper::CytoImageList(cellList)
+    mcols(cyto.nmask) <-
+      S4Vectors::DataFrame(imageID = names(image))
+    return(cyto.nmask)
+  }
+  
+  if (any(cellBody %in% dimnames(image[[1]])[[3]])) {
+    cells <- cytSeg2Parallel(
+      nmask,
+      image,
+      channel = cellBody,
+      size_selection = sizeSelection,
+      smooth = smooth,
+      normalize = transform,
+      cores = cores
+    )
     
-    #if dilate or none
-    if (cellBody %in% c("dilate", "none")){
-      cyto.nmask <- cytomapper::CytoImageList(nmask)
-      mcols(cyto.nmask) <- S4Vectors::DataFrame(imageID = names(cyto.nmask))
-      return(cyto.nmask)
-    }
+    # cellList <- NULL for (i in 1:length(cells[1,1,])){ cellList[[i]] <-
+    # as.Image(cells[,,i]) }
     
-    
-    if (cellBody == "discModel"){
-        
-        cells <- cytSegParallel (nmask,
-                                 image,
-                                 size_selection = sizeSelection,
-                                 smooth = smooth,
-                                 discSize = discSize,
-                                 #minMax = minMax,
-                                 #asinh = asinh,
-                                 normalize = transform,
-                                 cores = cores)
-
-        cyto.nmask <- cytomapper::CytoImageList(cellList)
-        mcols(cyto.nmask) <- S4Vectors::DataFrame(imageID = names(image))
-        return(cyto.nmask)
-    }
-    
-    #if marker
-    else if (any(cellBody %in% dimnames(image[[1]])[[3]])){
-        
-        cells <- cytSeg2Parallel(nmask,
-                                 image,
-                                 channel = cellBody,
-                                 size_selection = sizeSelection,
-                                 smooth = smooth,
-                                 #minMax = minMax,
-                                 #asinh = asinh
-                                 normalize = transform,
-                                 cores = cores)
-        
-        # cellList <- NULL
-        # for (i in 1:length(cells[1,1,])){
-        #   cellList[[i]] <- as.Image(cells[,,i])
-        # }
-        
-        cyto.nmask <- cytomapper::CytoImageList(cellList)
-        mcols(cyto.nmask) <- S4Vectors::DataFrame(imageID = names(image))
-        return(cyto.nmask)
-    }
+    cyto.nmask <- cytomapper::CytoImageList(cellList)
+    mcols(cyto.nmask) <-
+      S4Vectors::DataFrame(imageID = names(image))
+    return(cyto.nmask)
+  }
 }
-
-
-
-
-
-
-
