@@ -34,7 +34,7 @@ normalizeCells <- function(cells,
         if (is.null(assayIn)) {
             cells <- as.data.frame(t(assay(sce)))
         } else {
-            cells <- as.data.frame(t(assay(sce,assayName)))
+            cells <- as.data.frame(t(assay(sce,assayIn)))
         }
         cells[[imageID]] <- colData(sce)[[imageID]]
     }
@@ -58,7 +58,7 @@ normalizeCells <- function(cells,
     if ("meandiv" %in% method) {
         for (i in 1:length(unique(cells$imageID))) {
             cells[cells[[imageID]] == i, markers] <- sweep(cells[cells[[imageID]] == i, markers], 2, apply(cells[cells[[imageID]] == i, markers], 2, mean, 0.2),
-                                                        "/")
+                                                           "/")
         }
     }
     if ("99perc" %in% method) {
@@ -88,11 +88,11 @@ normalizeCells <- function(cells,
     }
     
     if (method == 'scMerge'){
-    if(!requireNamespace("scMerge", quietly = TRUE))
-        stop("The package 'scMerge' could not be found. Please install it.")
-    if(!requireNamespace("scMerge", quietly = TRUE))
+        if(!requireNamespace("scMerge", quietly = TRUE))
             stop("The package 'scMerge' could not be found. Please install it.")
-    if(!requireNamespace("scMerge", quietly = TRUE))
+        if(!requireNamespace("scMerge", quietly = TRUE))
+            stop("The package 'scMerge' could not be found. Please install it.")
+        if(!requireNamespace("scMerge", quietly = TRUE))
             stop("The package 'scMerge' could not be found. Please install it.")
         use_bpparam <- generateBPParam(cores)
         use_bsparam <- BiocSingular::RandomParam()
@@ -134,7 +134,7 @@ normalizeCells <- function(cells,
     }
     
     if(is(sce, "SingleCellExperiment")|is(cells, "SpatialExperiment")){
-        assay(sce, assayOut) <- cells
+        assay(sce, assayOut) <- t(cells[colnames(cells)!=imageID])
         return(sce)
     }
     
