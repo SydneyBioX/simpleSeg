@@ -77,7 +77,7 @@ simpleSeg <- function(image,
   
   # if dilate or none
   if (cellBody %in% c("dilate", "none")) {
-    nmask <- sapply(nmask, EBImage::Image)
+    nmask <- sapply(nmask, EBImage::Image, simplify = FALSE)
     cyto.nmask <- cytomapper::CytoImageList(nmask)
     S4Vectors::mcols(cyto.nmask) <-
       S4Vectors::DataFrame(imageID = names(cyto.nmask))
