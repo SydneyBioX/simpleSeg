@@ -56,9 +56,9 @@ simpleSeg <- function(image,
       )
     }
   }
-  whole_cell <- FALSE
+  wholeCell <- FALSE
   if (cellBody == "dilate") {
-    whole_cell <- TRUE
+    wholeCell <- TRUE
   }
   
   BPPARAM <- generateBPParam(cores)
@@ -71,7 +71,7 @@ simpleSeg <- function(image,
     normalize = transform,
     tolerance = tolerance,
     ext = ext,
-    whole_cell = whole_cell,
+    wholeCell = wholeCell,
     discSize = discSize,
     BPPARAM = BPPARAM
   )

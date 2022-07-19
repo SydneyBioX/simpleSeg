@@ -46,75 +46,98 @@ nucSeg <- function(image,
                    nucleus_index = 1,
                    size_selection = 10,
                    smooth = 1,
-                   normalize = c("norm99", "maxThresh", "asinh"),
                    tolerance = 0.01,
+                   watershed = "combine",
                    ext = 1,
                    discSize = 3,
-                   whole_cell = TRUE) {
-  # nuc <- image[,,nucleus_index] multiple channels may now be specified
-  
-  nuc <- image[, , nucleus_index]
-  nuc <- apply(nuc, c(1,2), mean)
+                   wholeCell = TRUE) {
   
   
-  nuc <- nucNormalize.helper(image, nuc, normalize)
-  
-  # smooth <- nucNormRes[[1]]
-  
-  nuc1 <- nuc
-  nuc1[is.na(nuc)] <- 0
   
   
-  nuc1 <- EBImage::gblur(sqrt(nuc1),
-                         smooth)
+  # Prepare matrix use to segment nuclei
+  nuc <- .prepNucSignal(image, nucleus_index, smooth)
   
-  # Otsu thresholding.
+  # Segment Nuclei
   nth <-
-    EBImage::otsu((nuc1), range = c(0, 1))  # thresholding on the sqrt intensities works better.
-  nmask <-
-    nuc1 > nth  # the threshold is squared to adjust of the sqrt previously.
+    EBImage::otsu(nuc, range = range(nuc))  # thresholding on the sqrt intensities works better.
+  nMask <-
+    nuc > nth  # the threshold is squared to adjust of the sqrt previously.
   
   
-  #### Watershed to segment nucleus.
-  nuc1 <- nuc  # make nuc a matrix
-  
-  nuc1[!nmask |
-         is.na(nmask)] <-
-    0  #get the intensities values in the nmask, and set other values to 0 that are not part of nmask.
-  
-  
-  # Size selection
-  nMaskLabel <- EBImage::bwlabel(nmask)
-  tnuc1 <- table(nMaskLabel)
+  # Size Selection
+  nMaskLabel <- EBImage::bwlabel(nMask*1)
+  tabNuc <- table(nMaskLabel)
+  nMask[nMaskLabel %in% names(which(tabNuc <= size_selection))] <- 0  
+  nMaskLabel[nMaskLabel %in% names(which(tabNuc <= size_selection))] <- 0 
   
   
-  nuc1[nMaskLabel %in% names(which(tnuc1 <= size_selection))] <-
-    0  # sizes less than 10 are set to zero.
-  
-  nmask[nMaskLabel %in% names(which(tnuc1 <= size_selection))] <-
-    0  # sizes less than 10 are set to zero.
-  
-  
-  
-  kern <- EBImage::makeBrush(5, shape = "disc")
-  
-  
-  disk_blur <- EBImage::filter2(sqrt(nuc1),
-                                kern)  #a
-  
-  nmask1 <-
-    EBImage::watershed(disk_blur * nmask, tolerance = tolerance, ext = ext)
-  
-  kern <- EBImage::makeBrush(discSize, shape = "disc")
-  cell1 <- EBImage::dilate(nmask1, kern)
-  disk1 <- cell1 - nmask1 > 0
-  disk1 <- EBImage::watershed(disk1)
-  if (whole_cell) {
-    return(EBImage::Image(cell1))
-  } else {
-    return(EBImage::Image(nmask1))
+  if(watershed == "distance"){
+    if(is.null(tolerance)) tolerance <- 1
+    dist <- EBImage::distmap(nMask)
+    wMask <-
+      EBImage::watershed(dist, tolerance = tolerance, ext = ext)
+    
+    if(wholeCell){
+      kern <- EBImage::makeBrush(discSize, shape = "disc")
+      wMask <- EBImage::dilate(wMask, kern)
+    }
+    
+    return(wMask)
+    
   }
   
+  if(watershed == "combine"){
+    
+    # Scale cell intensities
+    avg <- tapply(nuc, nMaskLabel, mean)
+    AVG <- nMask
+    AVG[] <- avg[as.character(nMaskLabel)]
+    nuc <- (nuc/AVG)*nMask
+    nuc <- nuc/median(avg[as.character(nMaskLabel)])*nMask
+    #nuc <- nuc/sd(nuc[nuc!=0])/2
+    
+    dist <- EBImage::distmap(nMask)
+    
+    if(is.null(tolerance)){
+      tolerance <- .estimateTolerance(dist*nuc, nMask)
+    }
+    
+    wMask <-
+      EBImage::watershed(dist*nuc, tolerance = tolerance, ext = ext)
+    
+    if(wholeCell){
+      kern <- EBImage::makeBrush(discSize, shape = "disc")
+      wMask <- EBImage::dilate(wMask, kern)
+    }
+    
+    return(wMask)
+  }
+  
+  
+  # Add distance to nuc signal
+  cellRadius <- 2*floor(sqrt(size_selection/pi)/2)+1
+  nuc <- filter2(nuc, makeBrush(cellRadius, shape='disc'))
+  nuc <- nuc * nMask
+  
+  if(is.null(tolerance)){
+    tolerance <- .estimateTolerance(nuc, nMask)
+  }
+  
+  wMask <-
+    EBImage::watershed(nuc, tolerance = tolerance, ext = ext)
+  
+  # Size Selection
+  tabNuc <- table(wMask)
+  wMask[wMask %in% names(which(tabNuc <= size_selection))] <- 0  
+  
+  if(wholeCell){
+    kern <- EBImage::makeBrush(discSize, shape = "disc")
+    wMask <- EBImage::dilate(wMask, kern)
+  }
+  
+  
+  wMask
   
 }
 
@@ -129,7 +152,7 @@ nucSegParallel <- function(image,
                            tolerance = 0.01,
                            ext = 1,
                            discSize = 3,
-                           whole_cell = TRUE,
+                           wholeCell = TRUE,
                            BPPARAM = BiocParallel::SerialParam()) {
   output <- BiocParallel::bplapply(
     image,
@@ -141,10 +164,62 @@ nucSegParallel <- function(image,
     size_selection = size_selection,
     smooth = smooth,
     normalize = normalize,
-    whole_cell = whole_cell,
+    wholeCell = wholeCell,
     BPPARAM = BPPARAM
   )
 }
+
+
+
+.prepNucSignal <- function(image, nucleus_index, smooth){
+  
+  
+  if("PCA" %in% nucleus_index){
+    image <- apply(image, 3, function(x){
+      x <- (x)
+      EBImage::gblur(x, smooth)
+    }, simplify = FALSE)
+    
+    image <- abind(image, along = 3)
+    
+    image.long <- apply(image,3, as.numeric)
+    pca <- prcomp(image.long[, apply(image.long, 2, sd)>0])
+    
+    usePC <- 1
+    if(any(nucleus_index%in%colnames(image.long))){
+      ind <- intersect(nucleus_index, colnames(image.long))
+      usePC <- which.max(abs(apply(pca$x, 2, cor, image.long[,nucleus_index[nucleus_index != "PCA"][1]])))
+    }
+    
+    PC <- pca$x[,usePC]
+    PC <- PC*sign(cor(PC, image.long[,nucleus_index[nucleus_index != "PCA"][1]]))
+    imagePC <- as.matrix(image[,,1])
+    imagePC[] <- PC - min(PC)
+    return(imagePC)
+  }
+  
+  if(is(nucleus_index, "character"))
+    ind <- intersect(nucleus_index, dimnames(image)[[3]])
+  
+  nuc <- image[, , ind]
+  if(length(ind)>1) nuc <- apply(nuc, c(1,2), mean)
+  nuc <- EBImage::gblur(nuc, smooth)
+  
+  nuc
+  
+}
+
+
+.estimateTolerance <- function(input, nMask){
+  y <- EBImage::distmap(nMask)
+  fit <- lm(as.numeric(input[y>0]) ~ as.numeric(y[y>0])-1)
+  tolerance <- coef(fit)[1]
+  tolerance
+  # tolerance <- sd(as.numeric(input[y>0]))/sd(as.numeric(y[y>0]))
+  # tolerance
+}
+
+
 
 
 ## disc model ##

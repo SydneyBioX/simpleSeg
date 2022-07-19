@@ -57,7 +57,7 @@ normalizeCells <- function(cells,
     # Methods
     if ("meandiv" %in% method) {
         for (i in unique(cells$imageID)) {
-            markerMeans <- apply(cells[cells[[imageID]] == i, markers], 2, mean, 0.2)
+            markerMeans <- apply(cells[cells[[imageID]] == i, markers], 2, mean, 0.001)
             markerMeans[markerMeans <= 0] <- 1
             cells[cells[[imageID]] == i, markers] <- sweep(cells[cells[[imageID]] == i, markers], 2, markerMeans,
                                                            "/")
