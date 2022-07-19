@@ -26,7 +26,7 @@
 #' @export simpleSeg
 #' @rdname simpleSeg
 #' @importFrom BiocParallel SerialParam bplapply MulticoreParam bpmapply
-#' @importFrom EBImage gblur otsu bwlabel makeBrush filter2 watershed dilate distmap propagate
+#' @importFrom EBImage gblur otsu bwlabel makeBrush filter2 watershed dilate distmap propagate Image
 #' @importFrom terra predict
 #' @import cytomapper
 #' @importFrom stats prcomp quantile lm
@@ -77,6 +77,7 @@ simpleSeg <- function(image,
   
   # if dilate or none
   if (cellBody %in% c("dilate", "none")) {
+    nmask <- sapply(nmask, EBImage::Image)
     cyto.nmask <- cytomapper::CytoImageList(nmask)
     S4Vectors::mcols(cyto.nmask) <-
       S4Vectors::DataFrame(imageID = names(cyto.nmask))
