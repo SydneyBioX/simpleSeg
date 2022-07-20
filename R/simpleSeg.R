@@ -84,6 +84,8 @@ simpleSeg <- function(image,
     cyto.nmask <- cytomapper::CytoImageList(nmask)
     S4Vectors::mcols(cyto.nmask) <-
       S4Vectors::DataFrame(imageID = names(cyto.nmask))
+    objectNum <- as.list(sapply(cyto.nmask, max))
+    mcols(cyto.nmask)$objectNum <- objectNum
     return(cyto.nmask)
   }
   
@@ -101,6 +103,9 @@ simpleSeg <- function(image,
     cyto.nmask <- cytomapper::CytoImageList(cellList)
     S4Vectors::mcols(cyto.nmask) <-
       S4Vectors::DataFrame(imageID = names(image))
+    objectNum <- as.list(sapply(cyto.nmask, max))
+    mcols(cyto.nmask)$objectNum <- objectNum
+    
     return(cyto.nmask)
   }
   
@@ -121,6 +126,8 @@ simpleSeg <- function(image,
     cyto.nmask <- cytomapper::CytoImageList(cellList)
     S4Vectors::mcols(cyto.nmask) <-
       S4Vectors::DataFrame(imageID = names(image))
+    objectNum <- as.list(sapply(cyto.nmask, max))
+    mcols(cyto.nmask)$objectNum <- objectNum
     return(cyto.nmask)
   }
 }
