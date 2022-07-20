@@ -9,6 +9,7 @@
 #' @param smooth the amount of smoothing to be applied to the nuclei marker channle
 #' @param norm99perfrom 99th percentile transformation
 #' @param maxThresh scale intensities between 0 and 1
+#' @param watershed Method used to perform watershed.
 #' @param tolerance The minimum height of the object in the units of image intensity between its highest point (seed) and the point where it contacts another object (checked for every contact pixel). If the height is smaller than the tolerance, the object will be combined with one of its neighbors, which is the highest. Tolerance should be chosen according to the range of x. Default value is 1, which is a reasonable value if x comes from distmap.
 #' @param ext Radius of the neighborhood in pixels for the detection of neighboring objects. Higher value smoothes out small objects.
 #' @param discSize size of dilation around nuclei to create cell disk #dilation size
@@ -37,6 +38,7 @@ simpleSeg <- function(image,
                       sizeSelection = 10,
                       smooth = 1,
                       transform = NULL,
+                      watershed = "combine",
                       tolerance = NULL,
                       ext = 1,
                       discSize = 3,
@@ -68,6 +70,7 @@ simpleSeg <- function(image,
     nucleus_index = nucleus,
     size_selection = sizeSelection,
     smooth = smooth,
+    watershed = watershed,
     tolerance = tolerance,
     ext = ext,
     wholeCell = wholeCell,
