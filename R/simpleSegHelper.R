@@ -173,7 +173,9 @@ nucSegParallel <- function(image,
 
 .prepNucSignal <- function(image, nucleus_index, smooth){
   
-  
+  #Alex testing------------
+  ind <- nucleus_index
+  #--------------------------
   if("PCA" %in% nucleus_index){
     image <- apply(image, 3, function(x){
       x <- (x)
@@ -321,11 +323,11 @@ cytSegParallel <- function(nmask,
   )
 }
 
-list1 <- c(1, 2, 3, 4, 5)
-list2 <- c(6, 7, 8, 9, 10)
-test.function <- function(list1, list2) {
-  return(list1 + list2)
-}
+#list1 <- c(1, 2, 3, 4, 5)
+#list2 <- c(6, 7, 8, 9, 10)
+#test.function <- function(list1, list2) {
+#  return(list1 + list2)
+#}
 
 ## Marker Model ## Cyt segmentation based on a specified cytoplasmic marker ##
 
