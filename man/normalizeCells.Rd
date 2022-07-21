@@ -26,9 +26,9 @@ normalizeCells(
 
 \item{imageID}{If input is a SCE or SE, this is the name of the image ID variable in order to stratify cells correctly}
 
-\item{transformation}{The transformation to be performed, default is NULL, accepted values: 'asinh', 'sqrt', 'log'}
+\item{transformation}{The transformation/s to be performed, default is NULL, accepted values: 'asinh', 'sqrt', 'log'}
 
-\item{method}{The normalization method to be performed, default is NULL, accepted values: 'meandiv', '99perc', '1stPC'}
+\item{method}{The normalization method/s to be performed, default is NULL, accepted values: 'meandiv', '99perc', '1stPC'}
 }
 \value{
 returns a dataframe with individual cells as rows and features as columns
