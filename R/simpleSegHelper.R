@@ -337,49 +337,49 @@ CytSeg2 <- function(nmask,
                     size_selection = 5,
                     smooth = 1,
                     normalize = c("maxThresh", "asinh")) {
-  CD44 <-
-    image[, , channel]  #CD44 is the target protein for this channel
+  cytpred <-
+    image[, , channel]  #cytpred is the target protein for this channel
   
-  CD44 <- image[, , channel[1]]
+  cytpred <- image[, , channel[1]]
   if (length(channel) >
       1) {
     for (i in 1:length(channel) -
          1) {
-      CD44 <- CD44 + image[, , channel[i + 1]]
+      cytpred <- cytpred + image[, , channel[i + 1]]
     }
-    CD44 <- CD44 / length(channel)
+    cytpred <- cytpred / length(channel)
   }
   
   
   if ("maxThresh" %in% normalize) {
-    CD44 <- CD44 / max(CD44)
+    cytpred <- cytpred / max(cytpred)
   }
   
   
   if ("asinh" %in% normalize) {
-    CD44 <- asinh(CD44)
+    cytpred <- asinh(cytpred)
   }
   if ("sqrt" %in% normalize) {
-    CD44 <- sqrt(CD44)
+    cytpred <- sqrt(cytpred)
   }
   
   
-  CD44smooth <- EBImage::gblur(CD44, sigma = smooth)
+  cytpredsmooth <- EBImage::gblur(cytpred, sigma = smooth)
   
   
   longImage <- data.frame(apply(asinh(image),
                                 3, as.vector),
-                          CD44smooth = as.vector(CD44smooth))
+                          cytpredsmooth = as.vector(cytpredsmooth))
   fit <-
-    lm(CD44smooth ~ ., longImage)  #using all the other variables (staining channels) to predict CD44
+    lm(cytpredsmooth ~ ., longImage)  #using all the other variables (staining channels) to predict cytpred
   
-  CD44pred <- CD44
-  CD44pred[] <- terra::predict(fit, longImage)
-  CD44pred <- CD44pred - min(CD44pred)
-  CD44pred <- CD44pred / max(CD44pred)
+  cytpredpred <- cytpred
+  cytpredpred[] <- terra::predict(fit, longImage)
+  cytpredpred <- cytpredpred - min(cytpredpred)
+  cytpredpred <- cytpredpred / max(cytpredpred)
   
-  cellTh <- EBImage::otsu(CD44pred, range = c(0, 1))
-  cell <- CD44pred > cellTh
+  cellTh <- EBImage::otsu(cytpredpred, range = c(0, 1))
+  cell <- cytpredpred > cellTh
   
   cell <- cell + nmask > 0
   
@@ -388,7 +388,7 @@ CytSeg2 <- function(nmask,
   nmask[nuc_label %in% names(which(tnuc <= size_selection))] <- 0
   
   
-  cmask4 <- EBImage::propagate(CD44pred, nmask, cell)
+  cmask4 <- EBImage::propagate(cytpredpred, nmask, cell)
   
   return(EBImage::Image(cmask4))
 }
