@@ -50,14 +50,14 @@ simpleSeg <- function(image,
   }
   # do nmask (if cellBody is null return nuc mask)
   
-  if (!(cellBody %in% c("none", "dilate", "discModel"))) {
-    if (is.numeric(cellBody) ==
-        FALSE) {
-      stop(
-        "cellBody must be one of the following: 'none', 'dilate', 'discModel' or the index of a cytoplasm marker channel"
-      )
-    }
-  }
+  #if (!(cellBody %in% c("none", "dilate", "discModel"))) {
+  #  if (is.numeric(cellBody) ==
+  #      FALSE) {
+  #    stop(
+  #      "cellBody must be one of the following: 'none', 'dilate', 'discModel' or the index of a cytoplasm marker channel"
+  #    )
+  #  }
+  #}
   wholeCell <- FALSE
   if (cellBody == "dilate") {
     wholeCell <- TRUE
