@@ -173,9 +173,9 @@ nucSegParallel <- function(image,
 
 .prepNucSignal <- function(image, nucleus_index, smooth){
   
-  #Alex testing------------
+  #Default, assuming nucleus_index is an integer
   ind <- nucleus_index
-  #--------------------------
+
   if("PCA" %in% nucleus_index){
     image <- apply(image, 3, function(x){
       x <- (x)

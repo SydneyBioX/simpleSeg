@@ -99,14 +99,19 @@ simpleSeg <- function(image,
       normalize = transform,
       BPPARAM = BPPARAM
     )
+    #Converting from a tiff stack to individual images
+    cellList <- NULL 
+    for (i in 1:length(cells[1,1,])){ 
+      cellList[[i]] <-as.Image(cells[,,i]) 
+    }
     
-    cyto.nmask <- cytomapper::CytoImageList(cellList)
-    S4Vectors::mcols(cyto.nmask) <-
+    cyto.mask <- cytomapper::CytoImageList(cellList)
+    S4Vectors::mcols(cyto.mask) <-
       S4Vectors::DataFrame(imageID = names(image))
-    objectNum <- as.list(sapply(cyto.nmask, max))
-    mcols(cyto.nmask)$objectNum <- objectNum
+    objectNum <- as.list(sapply(cyto.mask, max))
+    mcols(cyto.mask)$objectNum <- objectNum
     
-    return(cyto.nmask)
+    return(cyto.mask)
   }
   
   if (any(cellBody %in% dimnames(image[[1]])[[3]])) {
@@ -120,14 +125,17 @@ simpleSeg <- function(image,
       BPPARAM = BPPARAM
     )
     
-    # cellList <- NULL for (i in 1:length(cells[1,1,])){ cellList[[i]] <-
-    # as.Image(cells[,,i]) }
+    #Converting from a tiff stack to individual images
+    cellList <- NULL 
+    for (i in 1:length(cells[1,1,])){ 
+      cellList[[i]] <-as.Image(cells[,,i]) 
+      }
     
-    cyto.nmask <- cytomapper::CytoImageList(cellList)
-    S4Vectors::mcols(cyto.nmask) <-
+    cyto.mask <- cytomapper::CytoImageList(cellList)
+    S4Vectors::mcols(cyto.mask) <-
       S4Vectors::DataFrame(imageID = names(image))
-    objectNum <- as.list(sapply(cyto.nmask, max))
-    mcols(cyto.nmask)$objectNum <- objectNum
-    return(cyto.nmask)
+    objectNum <- as.list(sapply(cyto.mask, max))
+    mcols(cyto.mask)$objectNum <- objectNum
+    return(cyto.mask)
   }
 }
