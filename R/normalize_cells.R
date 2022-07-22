@@ -252,7 +252,7 @@ normalizeCells <- function(cells,
     
     if (is.null(method) == FALSE){
       for (i in 1:length(method)){
-        cells <- switch(i,
+        cells <- switch(method[1],
                         "meandiv" = meandiv(cells, markers, imageID),
                         "perc99" = perc99(cells, markers, imageID),
                         "PC1" = PC1(cells, markers, imageID),
