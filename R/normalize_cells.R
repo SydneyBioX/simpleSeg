@@ -229,12 +229,12 @@ normalizeCells <- function(cells,
           # Number of neighbours when performgraph clustering
           pseudoBulk_fn = create_pseudoBulk,
           # ways of onstructing pseudo bulk
-          ncores = ncores,
+          ncores = cores,
           chosen.hvg = markers,
           #Highlyvariable genes to be used to identify pseudo-replicates... since IMC has  very few features, using all features.
-          cosineNorm = F,
+          cosineNorm = FALSE,
           return_subset = FALSE,
-          normalised = T
+          normalised = TRUE
         )
       dat_norm <- as.data.frame(scMerge_res$newY)
       cells[, markers] <- dat_norm
