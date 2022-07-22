@@ -191,10 +191,14 @@ nucSegParallel <- function(image,
     if(any(nucleus_index%in%colnames(image.long))){
       ind <- intersect(nucleus_index, colnames(image.long))
       usePC <- which.max(abs(apply(pca$x, 2, cor, image.long[,nucleus_index[nucleus_index != "PCA"][1]])))
+      
+      PC <- pca$x[,usePC]
+      PC <- PC*sign(cor(PC, image.long[,nucleus_index[nucleus_index != "PCA"][1]]))
     }
-    
-    PC <- pca$x[,usePC]
-    PC <- PC*sign(cor(PC, image.long[,nucleus_index[nucleus_index != "PCA"][1]]))
+    else{
+      PC <- pca$x[,usePC]
+    }
+  
     imagePC <- as.matrix(image[,,1])
     imagePC[] <- PC - min(PC)
     return(imagePC)
