@@ -204,7 +204,7 @@ normalizeCells <- function(cells,
       use_bpparam <- generateBPParam(cores)
       use_bsparam <- BiocSingular::RandomParam()
       use_bnparam <- BiocNeighbors::AnnoyParam()
-      dat_sub <- dat[sample(nrow(dat), 500000),]
+      #dat_sub <- dat[sample(nrow(dat), 500000),]
       ctl_genes <- rownames(sce)
       exprsMat <- t(cells[, markers])
       colnames(exprsMat) <- seq_len(ncol(exprsMat))
@@ -243,7 +243,7 @@ normalizeCells <- function(cells,
     }
     if(is.null(transformation) == FALSE){
       for (i in 1:length(transformation)){
-        cells[, markers] <- switch(i,
+        cells[, markers] <- switch(transformation[i],
                         "asinh" = asinh(cells[, markers]),
                         "sqrt" = sqrt(cells[,markers]))
                         #"log" = log10(cells[,markers]))
@@ -252,7 +252,7 @@ normalizeCells <- function(cells,
     
     if (is.null(method) == FALSE){
       for (i in 1:length(method)){
-        cells <- switch(method[1],
+        cells <- switch(method[i],
                         "meandiv" = meandiv(cells, markers, imageID),
                         "perc99" = perc99(cells, markers, imageID),
                         "PC1" = PC1(cells, markers, imageID),
