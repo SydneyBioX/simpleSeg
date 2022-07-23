@@ -68,7 +68,8 @@ normalizeCells <- function(cells,
     minMax <- function(cells, markers, imageID){
       for (i in unique(cells[[imageID]])){
         cells[cells[[imageID]] == i, markers] <- apply(cells[cells[[imageID]] == i, markers], 2, function(x) {
-          (x - min(x)) / max(x)
+          x <- x - min(x) 
+          x / max(x)
         })
       }
       return(cells)
