@@ -30,7 +30,8 @@ nucSeg <- function(image,
 
   nuc <- .prepNucSignal(image, nucleus_index, smooth)
   
-  nuc <- .nucTransform(nuc, normalize)
+  # Remove this until Alex fixes it.
+  #nuc <- .nucTransform(nuc, normalize)
   
   # Segment Nuclei
   nth <-
