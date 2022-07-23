@@ -39,30 +39,92 @@ options(width = 130)
 
 ## Overview
 
-**simpleSeg** provides a structured pipeline for segmentation.
+**simpleSeg** provides a structured pipeline for segmentation of cellular tiff stacks and the normalization of features, priming cells for classification / clustering
 
 ```{r}
 library(simpleSeg)
 ```
 
-## Reading in data
-any imagning data can be read into the function to generate masks, be it matrices, lists or CytoImageLists. for the purposes of this demonstration, we will use example data provided in IMCdatasets package
+## Quick start
+simpleSeg accepts an image, image list or cytoImageList as input, generating a CytoImageList of masks as output.
 
 
-
+Reading in sample data
 ```{r}
 data(pancreasImages)
 ```
-Performing segmentation is simple
+Minimum input is the image/image list and the nuclei marker to be used. By default, simpleSeg identifies nuclei parker expression using principal component analysis and individual nuclei via watershedding. Nuclei are dilated out by 3 pixels to capture the cytoplasm.
 ```{r}
-masks <- simpleSeg::simpleSeg(pancreasImages, nucleus = 1, cores = 3, cellBody = "dilate")
+masks <- simpleSeg::simpleSeg(pancreasImages)
+
+
 ```
+
+
+cytomappers measureObjects function can then be used to generate a singleCellExperement object from the images and masks
 ```{r}
-cell.df <- createCells(masks, image)
+mcols(masks)$ImageNb <- c("1", "2", "3")
+mcols(pancreasImages)$ImageNb <- c("1", "2", "3")
+
+cell.sce <- measureObjects(masks, pancreasImages, img_id = "imageID")
+```
+
+
+## A more detailed look at SimpleSeg
+
+Herein we will demonstrate the full utility of simpleSeg. Demonstrating a range of functionality built into the simpleSeg function aimed at allowing users to optimize segmentation for their data.
+
+The user may specify one or more nuclei markers to be used instead of/in addition to PCA for nuclei identification:
+```{r}
+masks <- simpleSeg::simpleSeg(pancreasImages, nucleus = "H3")
+```
+
+The user may also specify what how watershedding is to be performed. {Distance} performs watershedding on a distance map of the thresholded nuclei signal. {Combine} multiplies this distance map by the raw nuclei marker signal, thus incorperating some information as to the location of the nuclei into the watershedding process
+```{r}
+masks <- simpleSeg::simpleSeg(pancreasImages, watershed = "combine")
+```
+The cell body can also be identified in simpleSeg using models of varying complexity. The default and most basic is dilation, as described above. The size of the datation in pixels may be specified under "discSize". The second, "discModel" uses all the markers to predict the pressence of dilated 'discs' around the nuclei. The model therefore learns which markers are typically present in the cell cytoplasm and generates a mask based on this. Finally the user may specify 1 or multiple dedicated cytoplasm markers to predict the cytoplasm
+```{r}
+masks <- simpleSeg::simpleSeg(pancreasImages, cellBody = "dilate")
+masks <- simpleSeg::simpleSeg(pancreasImages, cellBody = "discModel")
+masks <- simpleSeg::simpleSeg(pancreasImages, cellBody = "SMA")
+```
+simpleSeg also supports paralell processing, with the "cores" parameter specifying how many cores should be used
+
+
+
+```{r}
+
+cell.sce <- measureObjects(masks, pancreasImages, img_id = "imageID")
+
+
+cell.sce <- simpleSeg::normalizeCells(cell.sce, assayIn = "counts", imageID = "imageNb", transformation = "asinh", method = c("meandiv", "perc99"))
+
+cell1 <- data.frame(t(cell.sce@assays@data@listData[["counts"]]))
+cell1$imageNb <- cell.sce@colData@listData[["ImageNb"]]
+
+
+cell2 <- data.frame(t(cell.sce@assays@data@listData[["norm"]]))
+cell2$imageNb <- cell.sce@colData@listData[["ImageNb"]]
+```
+
+```{r}
+
+ggplot(cell1, aes(x = `CD99`, colour = factor(imageNb))) + geom_density() + theme(legend.position="none")+ theme_classic()
+ggplot(cell2, aes(x = `CD99`, colour = factor(imageNb))) + geom_density() + theme(legend.position="none")+ theme_classic()
+
 ```
 ```{r}
 mcols(masks)$ImageNb <- c("1", "2", "3")
-mcols(image)$ImageNb <- c("1", "2", "3")
+mcols(pancreasImages)$ImageNb <- c("1", "2", "3")
+
+mcols(masks2)$ImageNb <- c("1", "2", "3", "4", "5")
+imageSubset.cyto <- CytoImageList(imageSubset)
+mcols(imageSubset.cyto)$ImageNb <- c("1", "2", "3", "4", "5")
+
+cell.sce <- measureObjects(masks, pancreasImages, img_id = "ImageNb")
+
+cell2.sce <- measureObjects(masks2, imageSubset.cyto, img_id = "ImageNb")
 
 markers <- c("H3", "CD99", "PIN", "CD8a", "CDH")
 colnames(cell.df) <- c(markers, "x", "y", "area", "ImageID")
