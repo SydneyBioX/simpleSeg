@@ -33,7 +33,7 @@
 #' @importFrom stats prcomp quantile lm
 #' @importFrom S4Vectors mcols
 simpleSeg <- function(image,
-                      nucleus = 1,
+                      nucleus = "PCA",
                       cellBody = "dilate",
                       sizeSelection = 10,
                       smooth = 1,
