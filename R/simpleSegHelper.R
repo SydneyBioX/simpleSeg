@@ -1,33 +1,4 @@
-## Nuc Normalization ##
-nucNormalize.helper <- function(image, nuc, normalize) {
-  # if ('autoS' %in% normalize){ smooth <- autosmooth(image, smooth, 9, 4) #
-  # adjusting the smoothing parameter for low intensity images }
-  
-  
-  # Hotspot filtering. Intensities greater than the 99 percentile are changed
-  # to be exactly the 99th percentile intensity. This has the effect of
-  # removing outliers.
-  
-  if ("norm99" %in% normalize) {
-    nuc[nuc > quantile(nuc, 0.99, na.rm = TRUE)] <-
-      quantile(nuc, 0.99, na.rm = TRUE)
-    
-    if ("asinh" %in% normalize) {
-      nuc <- asinh(nuc)
-    }
-    
-    
-  }
-  if ("maxThresh" %in% normalize) {
-    nuc <- nuc / max(nuc, na.rm = TRUE)
-  }
-  
-  if ("sqrt" %in% normalize) {
-    nuc <- sqrt(nuc)
-  }
-  
-  return(nuc)
-}
+
 
 
 ## Autosmooth ##
@@ -56,7 +27,10 @@ nucSeg <- function(image,
   
   
   # Prepare matrix use to segment nuclei
+
   nuc <- .prepNucSignal(image, nucleus_index, smooth)
+  
+  nuc <- .nucTransform(nuc, normalize)
   
   # Segment Nuclei
   nth <-
@@ -225,7 +199,19 @@ nucSegParallel <- function(image,
   # tolerance
 }
 
-
+.nucTransform <- function(nuc, normalize) {
+  
+  for (i in 1:length(normalize)){
+    nuc <- switch(normalize[i],
+                  "norm99" = nuc[nuc > quantile(nuc, 0.99, na.rm = TRUE)] <- quantile(nuc, 0.99, na.rm = TRUE),
+                  "asinh" = asinh(nuc),
+                  "maxThresh" = nuc / max(nuc, na.rm = TRUE),
+                  "sqrt" = sqrt(nuc)
+    )
+  }
+  
+  return(nuc)
+}
 
 
 ## disc model ##
