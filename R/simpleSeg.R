@@ -75,6 +75,7 @@ simpleSeg <- function(image,
     ext = ext,
     wholeCell = wholeCell,
     discSize = discSize,
+    transform = transform,
     BPPARAM = BPPARAM
   )
   

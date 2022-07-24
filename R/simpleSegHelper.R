@@ -21,7 +21,8 @@ nucSeg <- function(image,
                    watershed = "combine",
                    ext = 1,
                    discSize = 3,
-                   wholeCell = TRUE) {
+                   wholeCell = TRUE,
+                   transform = NULL) {
   
   
   
@@ -30,7 +31,7 @@ nucSeg <- function(image,
 
   nuc <- .prepNucSignal(image, nucleus_index, smooth)
   
-  nuc <- .nucTransform(nuc, normalize)
+  if (is.null(transform) == FALSE) nuc <- .nucTransform(nuc, transform)
   
   # Segment Nuclei
   nth <-
@@ -127,6 +128,7 @@ nucSegParallel <- function(image,
                            discSize = 3,
                            wholeCell = TRUE,
                            watershed = "combine",
+                           transform = NULL,
                            BPPARAM = BiocParallel::SerialParam()) {
   output <- BiocParallel::bplapply(
     image,
@@ -139,6 +141,7 @@ nucSegParallel <- function(image,
     size_selection = size_selection,
     smooth = smooth,
     wholeCell = wholeCell,
+    transform = transform,
     BPPARAM = BPPARAM
   )
 }
