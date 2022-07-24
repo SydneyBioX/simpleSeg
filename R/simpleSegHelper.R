@@ -207,13 +207,18 @@ nucSegParallel <- function(image,
   
   for (i in 1:length(normalize)){
     nuc <- switch(normalize[i],
-                  "norm99" = nuc[nuc > quantile(nuc, 0.99, na.rm = TRUE)] <- quantile(nuc, 0.99, na.rm = TRUE),
+                  "norm99" = .norm99(nuc),
                   "asinh" = asinh(nuc),
                   "maxThresh" = nuc / max(nuc, na.rm = TRUE),
                   "sqrt" = sqrt(nuc)
     )
   }
   
+  return(nuc)
+}
+
+.norm99 <- function(nuc){
+  nuc[nuc > quantile(nuc, 0.99, na.rm = TRUE)] <- quantile(nuc, 0.99, na.rm = TRUE)
   return(nuc)
 }
 
