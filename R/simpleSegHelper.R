@@ -31,6 +31,7 @@ nucSeg <- function(image,
 
   nuc <- .prepNucSignal(image, nucleus_index, smooth)
   
+
   if (is.null(transform) == FALSE) nuc <- .nucTransform(nuc, transform)
   
   # Segment Nuclei
