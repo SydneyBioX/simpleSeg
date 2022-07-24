@@ -10,8 +10,9 @@ simpleSeg(
   cellBody = "dilate",
   sizeSelection = 10,
   smooth = 1,
-  transform = c("norm99", "maxThresh", "asinh"),
-  tolerance = 0.01,
+  transform = NULL,
+  watershed = "combine",
+  tolerance = NULL,
   ext = 1,
   discSize = 3,
   cores = 1
@@ -29,6 +30,8 @@ simpleSeg(
 \item{smooth}{the amount of smoothing to be applied to the nuclei marker channle}
 
 \item{transform}{a list containing desired normalization/transformation methods to be performed prior to cytoplasm identification, accepted values are 'maxThresh', 'norm99', 'sqrt' and/or 'asinh'}
+
+\item{watershed}{Method used to perform watershed.}
 
 \item{tolerance}{The minimum height of the object in the units of image intensity between its highest point (seed) and the point where it contacts another object (checked for every contact pixel). If the height is smaller than the tolerance, the object will be combined with one of its neighbors, which is the highest. Tolerance should be chosen according to the range of x. Default value is 1, which is a reasonable value if x comes from distmap.}
 
