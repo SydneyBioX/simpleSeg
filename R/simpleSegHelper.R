@@ -32,7 +32,7 @@ nucSeg <- function(image,
   nuc <- .prepNucSignal(image, nucleus_index, smooth)
   
 
-  if (is.null(transform) == FALSE) nuc <- .nucTransform(nuc, transform)
+  if (is.null(transform) == FALSE) nuc <- .Transform(nuc, transform)
   
   # Segment Nuclei
   nth <-
@@ -203,10 +203,10 @@ nucSegParallel <- function(image,
   # tolerance
 }
 
-.nucTransform <- function(nuc, normalize) {
+.Transform <- function(nuc, transform) {
   
-  for (i in 1:length(normalize)){
-    nuc <- switch(normalize[i],
+  for (i in 1:length(transform)){
+    nuc <- switch(transform[i],
                   "norm99" = .norm99(nuc),
                   "asinh" = asinh(nuc),
                   "maxThresh" = nuc / max(nuc, na.rm = TRUE),
