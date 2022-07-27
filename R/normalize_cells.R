@@ -5,14 +5,14 @@
 #' @param assayIn If input is a SCE or SE with multiple assays, specify the assay to be normalized/transformed
 #' @param assayOut If input is a SCE or SE, the new of the normalized data.
 #' @param imageID If input is a SCE or SE, this is the name of the image ID variable in order to stratify cells correctly
-#' @param transformation The transformation/s to be performed, default is NULL, accepted values: 'asinh', 'sqrt', 'log'
-#' @param method The normalization method/s to be performed, default is NULL, accepted values: 'mean', 'trim99', 'PC1'
+#' @param transformation The transformation/s to be performed, default is NULL, accepted values: 'asinh' and 'sqrt'
+#' @param method The normalization method/s to be performed, default is NULL, accepted values: 'mean', 'minMax', 'trim99', 'PC1'
 #'
 #' @return returns a dataframe with individual cells as rows and features as columns
 
 #' @examples
 #'
-#' cells.normalized <- normalizeCells(cells = cells.sce, markers = c('SMA', 'CD44', 'CD45', 'cyt-19') isSCE = TRUE, assayName = 'cells', imageNb = 'ImageID', transformation = 'asinh', method = 'trim99')
+#' cells.normalized <- normalizeCells(cells = cells.sce, markers = c('SMA', 'CD44', 'CD45', 'cyt-19'), assayIn = 'counts', assayOut = 'normCounts', imageID = 'ImageNb', transformation = 'asinh', method = 'trim99')
 #'
 #' @export normalizeCells
 #' @rdname normalizeCells

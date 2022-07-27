@@ -26,9 +26,9 @@ normalizeCells(
 
 \item{imageID}{If input is a SCE or SE, this is the name of the image ID variable in order to stratify cells correctly}
 
-\item{transformation}{The transformation/s to be performed, default is NULL, accepted values: 'asinh', 'sqrt', 'log'}
+\item{transformation}{The transformation/s to be performed, default is NULL, accepted values: 'asinh' and 'sqrt'}
 
-\item{method}{The normalization method/s to be performed, default is NULL, accepted values: 'meandiv', '99perc', '1stPC'}
+\item{method}{The normalization method/s to be performed, default is NULL, accepted values: 'mean', 'minMax', 'trim99', 'PC1'}
 }
 \value{
 returns a dataframe with individual cells as rows and features as columns
@@ -38,6 +38,6 @@ Normalizes and transforms cell data in preparation for clustering (accepts dataf
 }
 \examples{
 
-cells.normalized <- normalizeCells(cells = cells.sce, markers = c('SMA', 'CD44', 'CD45', 'cyt-19') isSCE = TRUE, assayName = 'cells', imageNb = 'ImageID', transformation = 'asinh', method = '99perc')
+cells.normalized <- normalizeCells(cells = cells.sce, markers = c('SMA', 'CD44', 'CD45', 'cyt-19'), assayIn = 'counts', assayOut = 'normCounts', imageID = 'ImageNb', transformation = 'asinh', method = 'trim99')
 
 }

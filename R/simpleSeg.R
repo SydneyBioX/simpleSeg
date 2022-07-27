@@ -1,15 +1,15 @@
 #' Perform simple segmentation of multiplexed cellular images
 #'
 #' @param image An image or list of images or CytoImageList to be read into the function.
-#' @param nucleus the marker or list of markers corresponding to the nuclei marker/s. PCA can also be specified here.
-#' @param cellBody method of cytoplasm identification. Can be 'none', dilate', 'discModel' or the name of a dedicated cytoplasm markers
-#' @param sizeSelection minimum pixels for an object to be recognised as signal and not noise
-#' @param smooth the amount of smoothing to be applied to the nuclei marker channel
-#' @param transform A transformation or list of transformations / normalisations to be performed prior to nuclei / cytoplasm identification. Accepted vales: "sqrt", "asinh", "norm99" and "maxThresh".
+#' @param nucleus The marker or list of markers corresponding to the nuclei marker/s. PCA can also be specified here
+#' @param cellBody Method of cytoplasm identification. Can be 'none', dilate', 'discModel' or the name of a dedicated cytoplasm markers
+#' @param sizeSelection Minimum pixels for an object to be recognised as signal and not noise
+#' @param smooth The amount of smoothing to be applied to the nuclei marker channel
+#' @param transform A transformation or list of transformations / normalisations to be performed prior to nuclei / cytoplasm identification. Accepted vales: "sqrt", "asinh", "norm99" and "maxThresh"
 #' @param watershed Method used to perform watershed. Can be "distance" or "combine"
-#' @param tolerance The minimum height of the object in the units of image intensity between its highest point (seed) and the point where it contacts another object (checked for every contact pixel). If the height is smaller than the tolerance, the object will be combined with one of its neighbors, which is the highest. Tolerance should be chosen according to the range of x. Default value is 1, which is a reasonable value if x comes from distmap.
+#' @param tolerance The minimum height of the object in the units of image intensity between its highest point (seed) and the point where it contacts another object (checked for every contact pixel). If the height is smaller than the tolerance, the object will be combined with one of its neighbors, which is the highest. Tolerance should be chosen according to the range of x. Default value is 1, which is a reasonable value if x comes from distmap
 #' @param ext Radius of the neighborhood in pixels for the detection of neighboring objects. Higher value smooths out small objects.
-#' @param discSize size of dilation around nuclei to create cell disk #dilation siz
+#' @param discSize The size of dilation around nuclei to create cell disk
 #' @param cores The number or cores for parallel processing
 #'
 #' @return A list of image masks

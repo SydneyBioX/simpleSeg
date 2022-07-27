@@ -148,7 +148,7 @@ Finally the user may specify 1 or multiple dedicated cytoplasm markers to predic
 masks <- simpleSeg(pancreasImages,
                    nucleus = "H3",
                    transform = "asinh",
-                   cellBody = "CD8a")
+                   cellBody = "CDH")
 display(masks[[1]])
 
 cells <- rgbImage(green = 0.05 * pancreasImages[[1]][,,1], 
@@ -165,3 +165,9 @@ display(segmented)
 ```{r}
 masks <- simpleSeg(pancreasImages, cores = 5)
 ```
+# Normalizing cells
+Once cellular features have been extracted into a singleCellExperement or dataframe, these features may then be normalized using the `normalizeCells`function.
+```{r}
+cell.sce.norm <- normalizeCells(cell.sce, markers = c("CD99", "PIN", "CD8a", "CDH"), assayIn = "counts", assayOut = "counts.norm", imageID = "imageNb", transformation = "asinh", method = c("mean", "trim99"))
+```
+
