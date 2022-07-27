@@ -30,7 +30,7 @@ vignette: >
     }    
 </style>
 
-```{r, echo = FALSE, results = "asis"}
+```{r, echo = FALSE}
 options(width = 130)
 
 
@@ -41,7 +41,7 @@ options(width = 130)
 
 **simpleSeg** provides a structured pipeline for segmentation of cellular tiff stacks and the normalization of features, priming cells for classification / clustering
 
-```{r}
+```{r, warning==FALSE}
 library(simpleSeg)
 ```
 
@@ -55,7 +55,7 @@ data(pancreasImages)
 ```
 Minimum input is the image/image list and the nuclei marker to be used. By default, simpleSeg identifies nuclei parker expression using principal component analysis and individual nuclei via watershedding. Nuclei are dilated out by 3 pixels to capture the cytoplasm.
 ```{r}
-masks <- simpleSeg::simpleSeg(pancreasImages)
+masks <- simpleSeg::simpleSeg(pancreasImages, transform = c("sqrt"), watershed = "distance")
 
 
 ```
@@ -66,7 +66,7 @@ cytomappers measureObjects function can then be used to generate a singleCellExp
 mcols(masks)$ImageNb <- c("1", "2", "3")
 mcols(pancreasImages)$ImageNb <- c("1", "2", "3")
 
-cell.sce <- measureObjects(masks, pancreasImages, img_id = "imageID")
+cell.sce <- measureObjects(masks, pancreasImages, img_id = "ImageNb")
 ```
 
 
@@ -76,7 +76,7 @@ Herein we will demonstrate the full utility of simpleSeg. Demonstrating a range 
 
 The user may specify one or more nuclei markers to be used instead of/in addition to PCA for nuclei identification:
 ```{r}
-masks <- simpleSeg::simpleSeg(pancreasImages, nucleus = "H3")
+masks <- simpleSeg::simpleSeg(pancreasImages, nucleus = "H3", transform = "asinh")
 ```
 
 The user may also specify what how watershedding is to be performed. {Distance} performs watershedding on a distance map of the thresholded nuclei signal. {Combine} multiplies this distance map by the raw nuclei marker signal, thus incorperating some information as to the location of the nuclei into the watershedding process
@@ -93,41 +93,7 @@ simpleSeg also supports paralell processing, with the "cores" parameter specifyi
 
 
 
-```{r}
-
-cell.sce <- measureObjects(masks, pancreasImages, img_id = "imageID")
 
 
-cell.sce <- simpleSeg::normalizeCells(cell.sce, assayIn = "counts", imageID = "imageNb", transformation = "asinh", method = c("meandiv", "perc99"))
 
-cell1 <- data.frame(t(cell.sce@assays@data@listData[["counts"]]))
-cell1$imageNb <- cell.sce@colData@listData[["ImageNb"]]
-
-
-cell2 <- data.frame(t(cell.sce@assays@data@listData[["norm"]]))
-cell2$imageNb <- cell.sce@colData@listData[["ImageNb"]]
-```
-
-```{r}
-
-ggplot(cell1, aes(x = `CD99`, colour = factor(imageNb))) + geom_density() + theme(legend.position="none")+ theme_classic()
-ggplot(cell2, aes(x = `CD99`, colour = factor(imageNb))) + geom_density() + theme(legend.position="none")+ theme_classic()
-
-```
-```{r}
-mcols(masks)$ImageNb <- c("1", "2", "3")
-mcols(pancreasImages)$ImageNb <- c("1", "2", "3")
-
-mcols(masks2)$ImageNb <- c("1", "2", "3", "4", "5")
-imageSubset.cyto <- CytoImageList(imageSubset)
-mcols(imageSubset.cyto)$ImageNb <- c("1", "2", "3", "4", "5")
-
-cell.sce <- measureObjects(masks, pancreasImages, img_id = "ImageNb")
-
-cell2.sce <- measureObjects(masks2, imageSubset.cyto, img_id = "ImageNb")
-
-markers <- c("H3", "CD99", "PIN", "CD8a", "CDH")
-colnames(cell.df) <- c(markers, "x", "y", "area", "ImageID")
-cell.df.normalized <- simpleSeg::normalizeCells(cell.df, markers = markers, transformation = "asinh", method = "99perc")
-```
 
