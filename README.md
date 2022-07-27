@@ -4,7 +4,9 @@ simpleSeg
 Overview
 --------
 
-**simpleSeg** provides a structured pipeline for segmentation of cellular tiff stacks and the normalization of features, priming cells for classification / clustering
+**simpleSeg** provides a structured pipeline for segmentation of cellular tiff stacks and the normalization of features, priming cells for classification / clustering.
+
+A preview of simpleSeg can be found [here](https://htmlpreview.github.io/?https://github.com/SydneyBioX/simpleSeg/blob/main/vignettes/simpleSeg.html), and integration with further analysis is explained in detail [here](https://github.com/SydneyBioX/spicyWorkflow).
 
 Installation
 --------
