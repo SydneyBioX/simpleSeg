@@ -1,125 +1,171 @@
 ---
-title: "An Introduction to **simpleSeg**"
-author: Alexander Nicholls, Ellis Patrick, Nicolas Canete <br>
-        The University of Sydney, Australia.
-output: 
-  BiocStyle::html_document:
-    toc: true
+title: "Spatial Mixed-Effects Modelling with spicy"
+date: "`r BiocStyle::doc_date()`"
+params:
+  test: FALSE
+author:
+- name: Alexander Nicholls
+  affiliation:  
+  - School of Mathematics and Statistics, University of Sydney, Australia
+- name: Ellis Patrick
+  affiliation:
+  - &WIMR Westmead Institute for Medical Research, University of Sydney, Australia
+  - School of Mathematics and Statistics, University of Sydney, Australia
+- name: Nicolas Canete
+  affiliation:  
+  - &WIMR Westmead Institute for Medical Research, University of Sydney, Australia
 vignette: >
+  %\VignetteIndexEntry{"Introduction to simpleSeg"}
   %\VignetteEngine{knitr::rmarkdown}
-  %\VignetteIndexEntry{An Introduction to the simpleSeg Package}
+  %\VignetteEncoding{UTF-8}
+output: 
+  BiocStyle::html_document
 ---
-
-<style>
-    body .main-container {
-        max-width: 1600px;
-    }
-    p {
-      padding: 20px;
-    }
-    .table {
-      border: 2px solid #e64626;
-    }
-    .table>thead>tr>th
-    {
-     border-bottom: 2px solid #e64626;
-     border-right: 1px solid black;
-    }
-    .table>tbody>tr>td {
-     border-right: 1px solid black;
-    }    
-</style>
-
-```{r, echo = FALSE}
-options(width = 130)
-
-
-
+  
+  ```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+library(BiocStyle)
 ```
 
-## Overview
 
-**simpleSeg** provides a structured pipeline for segmentation of cellular tiff stacks and the normalization of features, priming cells for classification / clustering
-
-```{r, message=FALSE}
+```{r warning=FALSE, message=FALSE}
+# load required packages
 library(simpleSeg)
 ```
 
-## Quick start
-simpleSeg accepts an image, image list or cytoImageList as input, generating a CytoImageList of masks as output.
+# Installation
 
+```{r, eval = FALSE}
+# Install the development version from GitHub:
+# install.packages("devtools")
+devtools::install_github("SydneyBioX/simpleSeg")
+```
 
-Reading in sample data
+# Overview
+`simpleSeg` provides a structured pipeline for segmentation of cellular tiff stacks and the normalization of features, priming cells for classification / clustering
+
+# Quick start
+`simpleSeg` accepts an image, image list or cytoImageList as input, and generates a CytoImageList of masks as output.
+
 ```{r}
+# Reading in sample data
 data(pancreasImages)
+summary(pancreasImages)
 ```
-Minimum input is the image/image list and the nuclei marker to be used. By default, simpleSeg identifies nuclei marker expression using principal component analysis and individual nuclei via watershedding. Nuclei are dilated out by 3 pixels to capture the cytoplasm.
-```{r}
-masks <- simpleSeg::simpleSeg(pancreasImages, transform = c("sqrt"), watershed = "distance")
 
-cells = rgbImage(green=0.05 * pancreasImages[[1]][,,1], blue=0.03 * pancreasImages[[1]][,,2], red = 0.05 * pancreasImages[[1]][,,5])
+The minimum input required is the image/image list and the nuclei marker to be used. 
 
-segmented = paintObjects(masks[[1]], cells, col='#ffffff')
+# Segmentation
+## Quick Started
+
+By default, `simpleSeg` identifies nuclei marker expression using principal component analysis and individual nuclei via watershedding. Nuclei are dilated out by 3 pixels to capture the cytoplasm.
+
+The user may specify the image transformation used using the `transform` argument.
+
+```{r, out.width = "400px"}
+masks <- simpleSeg(pancreasImages, 
+                   transform = c("sqrt"), 
+                   watershed = "distance")
+display(masks[[1]])
+
+cells <- rgbImage(green = 0.05 * pancreasImages[[1]][,,1], 
+                  blue = 0.03 * pancreasImages[[1]][,,2], 
+                  red = 0.05 * pancreasImages[[1]][,,5])
+segmented <- paintObjects(masks[[1]], cells, col='#ffffff')
 display(segmented)
-
 ```
 
 
-cytomappers measureObjects function can then be used to generate a singleCellExperement object from the images and masks
-```{r}
+The `measureObjects` function from the `cytomapper` package can then be used to generate a `SingleCellExperement` object from the images and masks
+```{r, out.width = "400px"}
 mcols(masks)$ImageNb <- c("1", "2", "3")
 mcols(pancreasImages)$ImageNb <- c("1", "2", "3")
 
 cell.sce <- measureObjects(masks, pancreasImages, img_id = "ImageNb")
 ```
 
+## Methods of watershedding
+The user may specify how watershedding is to be performed. `watershed = "distance"` (above) performs watershedding on a distance map of the thresholded nuclei signal.
 
-## A more detailed look at SimpleSeg
-
-Herein we will demonstrate the full utility of simpleSeg. Demonstrating a range of functionality built into the simpleSeg function aimed at allowing users to optimize segmentation for their data.
-
-The user may specify one or more nuclei markers to be used instead of/in addition to PCA for nuclei identification:
-```{r}
-masks <- simpleSeg::simpleSeg(pancreasImages, nucleus = "H3", transform = "asinh")
-
-
-
-cells = rgbImage(green=0.05 * pancreasImages[[1]][,,1], blue=0.03 * pancreasImages[[1]][,,2], red = 0.05 * pancreasImages[[1]][,,5])
-
-segmented = paintObjects(masks[[1]], cells, col='#ffffff')
-display(cells)
+`watershed = "combine"` (default; below) multiplies this distance map by the raw nuclei marker signal, thus incorporating some information as to the location of the nuclei into the watershedding process.
+```{r, out.width = "400px"}
+masks <- simpleSeg(pancreasImages, 
+                   nucleus = "H3",
+                   transform = "asinh", 
+                   watershed = "combine")
 display(masks[[1]])
-display(segmented)
 
+cells <- rgbImage(green = 0.05 * pancreasImages[[1]][,,1], 
+                  blue = 0.03 * pancreasImages[[1]][,,2], 
+                  red = 0.05 * pancreasImages[[1]][,,5])
+segmented <- paintObjects(masks[[1]], cells, col='#ffffff')
+display(segmented)
 ```
 
-The user may also specify what how watershedding is to be performed. {Distance} performs watershedding on a distance map of the thresholded nuclei signal. {Combine} multiplies this distance map by the raw nuclei marker signal, thus incorperating some information as to the location of the nuclei into the watershedding process
+## Methods of cell body identification
+The cell body can also be identified in `simpleSeg` using models of varying complexity, specified with the `cellBody` argument. 
+
+### Dilatation
+The default and most basic is dilation (`cellBody = "dilate"`). The size of the dilatation in pixels may be specified with the `discDize` argument. 
+```{r, out.width = "400px"}
+masks <- simpleSeg(pancreasImages, 
+                   nucleus = "H3",
+                   transform = "asinh",
+                   cellBody = "dilate",
+                   discSize = 3)
+display(masks[[1]])
+
+cells <- rgbImage(green = 0.05 * pancreasImages[[1]][,,1], 
+                  blue = 0.03 * pancreasImages[[1]][,,2], 
+                  red = 0.05 * pancreasImages[[1]][,,5])
+segmented <- paintObjects(masks[[1]], cells, col='#ffffff')
+display(segmented)
+```
+
+
+### Disc Model
+`cellBody = "diskModel` uses all the markers to predict the presence of dilated 'discs' around the nuclei. The model therefore learns which markers are typically present in the cell cytoplasm and generates a mask based on this. 
+```{r, out.width = "400px"}
+masks <- simpleSeg(pancreasImages, 
+                   nucleus = "H3",
+                   transform = "asinh",
+                   cellBody = "discModel")
+display(masks[[1]])
+
+cells <- rgbImage(green = 0.05 * pancreasImages[[1]][,,1], 
+                  blue = 0.03 * pancreasImages[[1]][,,2], 
+                  red = 0.05 * pancreasImages[[1]][,,5])
+segmented <- paintObjects(masks[[1]], cells, col='#ffffff')
+display(segmented)
+```
+
+### Marker model
+Finally the user may specify 1 or multiple dedicated cytoplasm markers to predict the cytoplasm. this can be done using `cellBody = [marker name]` as below.
+```{r, out.width = "400px"}
+masks <- simpleSeg(pancreasImages,
+                   nucleus = "H3",
+                   transform = "asinh",
+                   cellBody = "CD8a")
+display(masks[[1]])
+
+cells <- rgbImage(green = 0.05 * pancreasImages[[1]][,,1], 
+                  blue = 0.03 * pancreasImages[[1]][,,2], 
+                  red = 0.05 * pancreasImages[[1]][,,5])
+segmented <- paintObjects(masks[[1]], cells, col='#ffffff')
+display(segmented)
+```
+
+
+# Parallel Processing
+`simpleSeg` also supports parallel processing, with the `cores` argument being used to specify how many cores should be used.
+
 ```{r}
-masks <- simpleSeg::simpleSeg(pancreasImages,  nucleus = "H3",transform = "asinh",watershed = "combine")
-segmented = paintObjects(masks[[1]], cells, col='#ffffff')
-display(segmented)
-```
-The cell body can also be identified in simpleSeg using models of varying complexity. The default and most basic is dilation, as described above. The size of the datation in pixels may be specified under "discSize". The second, "discModel" uses all the markers to predict the pressence of dilated 'discs' around the nuclei. The model therefore learns which markers are typically present in the cell cytoplasm and generates a mask based on this. Finally the user may specify 1 or multiple dedicated cytoplasm markers to predict the cytoplasm
-```{r}
-masks <- simpleSeg::simpleSeg(pancreasImages, nucleus = "H3",transform = "asinh",cellBody = "dilate")
-segmented = paintObjects(masks[[1]], cells, col='#ffffff')
-display(segmented)
-masks <- simpleSeg::simpleSeg(pancreasImages, nucleus = "H3",transform = "asinh",cellBody = "discModel")
-segmented = paintObjects(masks[[1]], cells, col='#ffffff')
-display(segmented)
-masks <- simpleSeg::simpleSeg(pancreasImages, nucleus = "H3",transform = "asinh",cellBody = "CD8a")
-segmented = paintObjects(masks[[1]], cells, col='#ffffff')
-display(segmented)
-```
-simpleSeg also supports paralell processing, with the "cores" parameter specifying how many cores should be used
-
-```{r}
-masks <- simpleSeg::simpleSeg(pancreasImages, cores = 5)
+masks <- simpleSeg(pancreasImages, cores = 5)
 ```
 
-```{r}
-
-```
 
 
 
