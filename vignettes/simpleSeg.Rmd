@@ -166,8 +166,14 @@ display(segmented)
 masks <- simpleSeg(pancreasImages, cores = 5)
 ```
 # Normalizing cells
-Once cellular features have been extracted into a singleCellExperement or dataframe, these features may then be normalized using the `normalizeCells`function.
+Once cellular features have been extracted into a SingleCellExperement or dataframe, these features may then be normalized using the `normalizeCells`function.
 ```{r}
-cell.sce.norm <- normalizeCells(cell.sce, markers = c("CD99", "PIN", "CD8a", "CDH"), assayIn = "counts", assayOut = "counts.norm", imageID = "imageNb", transformation = "asinh", method = c("mean", "trim99"))
+cell.sce.norm <- normalizeCells(cell.sce,
+                                markers = c("CD99", "PIN", "CD8a", "CDH"),
+                                assayIn = "counts",
+                                assayOut = "counts.norm",
+                                imageID = "imageNb",
+                                transformation = "asinh",
+                                method = c("mean", "trim99"))
 ```
 
