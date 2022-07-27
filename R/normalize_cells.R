@@ -158,7 +158,7 @@ normalizeCells <- function(cells,
         cells <- switch(method[i],
                         "mean" = meandiv(cells, markers, imageID),
                         "minMax" = minMax(cells, markers, imageID),
-                        "trim99" = quant99(cells, markers, imageID),
+                        "trim99" = trim99(cells, markers, imageID),
                         "PC1" = PC1(cells, markers, imageID),
                         "Mergesc" = Mergesc(cells, markers, imageID)
         )
