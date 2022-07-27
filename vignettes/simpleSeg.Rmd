@@ -165,10 +165,3 @@ display(segmented)
 ```{r}
 masks <- simpleSeg(pancreasImages, cores = 5)
 ```
-
-
-
-
-
-
-
