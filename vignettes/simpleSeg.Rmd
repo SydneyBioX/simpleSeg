@@ -48,7 +48,7 @@ devtools::install_github("SydneyBioX/simpleSeg")
 `simpleSeg` provides a structured pipeline for segmentation of cellular tiff stacks and the normalization of features, priming cells for classification / clustering
 
 # Quick start
-`simpleSeg` accepts an image, image list or cytoImageList as input, and generates a CytoImageList of masks as output.
+`simpleSeg` accepts an image, image list or CytoImageList as input, and generates a CytoImageList of masks as output.
 
 ```{r}
 # Reading in sample data
@@ -143,7 +143,7 @@ display(segmented)
 ```
 
 ### Marker model
-Finally the user may specify 1 or multiple dedicated cytoplasm markers to predict the cytoplasm. this can be done using `cellBody = [marker name]` as below.
+Finally the user may specify 1 or multiple dedicated cytoplasm markers to predict the cytoplasm. This can be done using `cellBody = [marker name]` as below.
 ```{r, out.width = "400px"}
 masks <- simpleSeg(pancreasImages,
                    nucleus = "H3",
