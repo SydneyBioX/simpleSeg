@@ -6,13 +6,13 @@
 #' @param assayOut If input is a SCE or SE, the new of the normalized data.
 #' @param imageID If input is a SCE or SE, this is the name of the image ID variable in order to stratify cells correctly
 #' @param transformation The transformation/s to be performed, default is NULL, accepted values: 'asinh', 'sqrt', 'log'
-#' @param method The normalization method/s to be performed, default is NULL, accepted values: 'meandiv', '99perc', '1stPC'
+#' @param method The normalization method/s to be performed, default is NULL, accepted values: 'mean', 'trim99', 'PC1'
 #'
 #' @return returns a dataframe with individual cells as rows and features as columns
 
 #' @examples
 #'
-#' cells.normalized <- normalizeCells(cells = cells.sce, markers = c('SMA', 'CD44', 'CD45', 'cyt-19') isSCE = TRUE, assayName = 'cells', imageNb = 'ImageID', transformation = 'asinh', method = '99perc')
+#' cells.normalized <- normalizeCells(cells = cells.sce, markers = c('SMA', 'CD44', 'CD45', 'cyt-19') isSCE = TRUE, assayName = 'cells', imageNb = 'ImageID', transformation = 'asinh', method = 'trim99')
 #'
 #' @export normalizeCells
 #' @rdname normalizeCells
@@ -54,7 +54,7 @@ normalizeCells <- function(cells,
       }
       return(cells)
     }
-    quant99 <- function(cells, markers, imageID) {
+    trim99 <- function(cells, markers, imageID) {
       for (i in unique(cells[[imageID]])) {
         cells[cells[[imageID]] == i, markers] <- apply(cells[cells[[imageID]] == i, markers], 2, function(x) {
           q <- quantile(x, 0.99)
@@ -158,7 +158,7 @@ normalizeCells <- function(cells,
         cells <- switch(method[i],
                         "mean" = meandiv(cells, markers, imageID),
                         "minMax" = minMax(cells, markers, imageID),
-                        "quant99" = quant99(cells, markers, imageID),
+                        "trim99" = quant99(cells, markers, imageID),
                         "PC1" = PC1(cells, markers, imageID),
                         "Mergesc" = Mergesc(cells, markers, imageID)
         )
