@@ -1,28 +1,22 @@
 #' Perform simple segmentation of multiplexed cellular images
 #'
-#' @param image An image
-#' @param BPPARAM A BiocParallelParam object.
-#' @param image An image or list of images or cytoimagelist to be read into the function.
-#' @param cellBody method of cytoplasm identification. Can be 'dilate', 'diskModel' or the index / list of indexes of dedicated cytoplasm markers
-#' @param nucleus the channel number or list of channel numbers corresponding to the nuclei marker/s
+#' @param image An image or list of images or CytoImageList to be read into the function.
+#' @param nucleus the marker or list of markers corresponding to the nuclei marker/s. PCA can also be specified here.
+#' @param cellBody method of cytoplasm identification. Can be 'none', dilate', 'discModel' or the name of a dedicated cytoplasm markers
 #' @param sizeSelection minimum pixels for an object to be recognised as signal and not noise
-#' @param smooth the amount of smoothing to be applied to the nuclei marker channle
-#' @param norm99perfrom 99th percentile transformation
-#' @param maxThresh scale intensities between 0 and 1
-#' @param watershed Method used to perform watershed.
+#' @param smooth the amount of smoothing to be applied to the nuclei marker channel
+#' @param transform A transformation or list of transformations / normalisations to be performed prior to nuclei / cytoplasm identification. Accepted vales: "sqrt", "asinh", "norm99" and "maxThresh".
+#' @param watershed Method used to perform watershed. Can be "distance" or "combine"
 #' @param tolerance The minimum height of the object in the units of image intensity between its highest point (seed) and the point where it contacts another object (checked for every contact pixel). If the height is smaller than the tolerance, the object will be combined with one of its neighbors, which is the highest. Tolerance should be chosen according to the range of x. Default value is 1, which is a reasonable value if x comes from distmap.
-#' @param ext Radius of the neighborhood in pixels for the detection of neighboring objects. Higher value smoothes out small objects.
-#' @param discSize size of dilation around nuclei to create cell disk #dilation size
-#' @param minMax scale image channel intensities between 0 and 1
-#' @param asinh perform asinh normalization on image channels
-#' @param transform a list containing desired normalization/transformation methods to be performed prior to cytoplasm identification, accepted values are 'maxThresh', 'norm99', 'sqrt' and/or 'asinh'
+#' @param ext Radius of the neighborhood in pixels for the detection of neighboring objects. Higher value smooths out small objects.
+#' @param discSize size of dilation around nuclei to create cell disk #dilation siz
 #' @param cores The number or cores for parallel processing
 #'
 #' @return A list of image masks
 #'
 #' @examples
 #'
-#' 1+1
+#' masks <- simpleSeg(imageList, nucleus = "H3", cellBody = "discModel", sizeSelection = 8, smooth = 1.2, transform = "sqrt", watershed = "combine", tolerance = 1, ext = 1, discSize = 3, cores = 5)
 #'
 #' @export simpleSeg
 #' @rdname simpleSeg
