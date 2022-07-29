@@ -27,7 +27,8 @@ calcTissueMaskParallel <-
     function(image,
              tissue_index = NULL,
              size_selection = 10,
-             BPPARAM = BPPARAM) {
+             cores = 1) {
+      BPPARAM <- generateBPParam(cores)
         
         result <- BiocParallel::bplapply(
             image,
