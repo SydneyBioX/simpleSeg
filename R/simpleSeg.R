@@ -36,6 +36,8 @@ simpleSeg <- function(image,
                       tolerance = NULL,
                       ext = 1,
                       discSize = 3,
+                      tissueMask = FALSE,
+                      tissueIndex = NULL,
                       cores = 1) {
   imageClass <- class(image)
   if (!imageClass %in% c("list", "CytoImageList")) {
@@ -70,6 +72,8 @@ simpleSeg <- function(image,
     wholeCell = wholeCell,
     discSize = discSize,
     transform = transform,
+    tissueMask = tissueMask,
+    tissueIndex = tissueIndex,
     BPPARAM = BPPARAM
   )
   

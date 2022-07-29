@@ -22,12 +22,21 @@ nucSeg <- function(image,
                    ext = 1,
                    discSize = 3,
                    wholeCell = TRUE,
-                   transform = NULL) {
+                   transform = NULL,
+                   tissueIndex = NULL,
+                   tissueMask = FALSE) {
   
   
   
   
   # Prepare matrix use to segment nuclei
+  if (tissueMask == TRUE){ # calculate tissue mask
+    tissueMask <- calcTissueMask(image,
+                                   tissueIndex) # separate tissue from background
+    
+    image <- sweep(image, c(1,2), tissueMask, "*")
+    
+  }
 
   nuc <- .prepNucSignal(image, nucleus_index, smooth)
   
@@ -130,6 +139,8 @@ nucSegParallel <- function(image,
                            wholeCell = TRUE,
                            watershed = "combine",
                            transform = NULL,
+                           tissueMask = FALSE,
+                           tissueIndex = NULL,
                            BPPARAM = BiocParallel::SerialParam()) {
   output <- BiocParallel::bplapply(
     image,
@@ -143,6 +154,8 @@ nucSegParallel <- function(image,
     smooth = smooth,
     wholeCell = wholeCell,
     transform = transform,
+    tissueMask = tissueMask,
+    tissueIndex = tissueIndex,
     BPPARAM = BPPARAM
   )
 }
@@ -153,6 +166,14 @@ nucSegParallel <- function(image,
   
   #Default, assuming nucleus_index is an integer
   ind <- nucleus_index
+  
+  if (tissueMask){ # calculate tissue mask
+    useTissueMask <- calcTissueMask(image,
+                                      tissueIndex) # separate tissue from background
+    
+    image <- sweep(image, c(1,2), useTissueMask, "*")
+    
+  }
 
   if("PCA" %in% nucleus_index){
     image <- apply(image, 3, function(x){
@@ -207,9 +228,9 @@ nucSegParallel <- function(image,
   
   for (i in 1:length(transform)){
     nuc <- switch(transform[i],
-                  "trim99" = .trim99(nuc),
+                  "norm99" = .norm99(nuc),
                   "asinh" = asinh(nuc),
-                  "minMax" = pmax((nuc - max(nuc, na.rm = TRUE)) / max(nuc, na.rm = TRUE), 0),
+                  "maxThresh" = nuc / max(nuc, na.rm = TRUE),
                   "sqrt" = sqrt(nuc)
     )
   }
@@ -217,7 +238,7 @@ nucSegParallel <- function(image,
   return(nuc)
 }
 
-.trim99 <- function(nuc){
+.norm99 <- function(nuc){
   nuc[nuc > quantile(nuc, 0.99, na.rm = TRUE)] <- quantile(nuc, 0.99, na.rm = TRUE)
   return(nuc)
 }
