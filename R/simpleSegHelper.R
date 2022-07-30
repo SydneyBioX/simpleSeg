@@ -276,13 +276,7 @@ CytSeg <- function(nmask,
   longImage_disk <- data.frame(apply(asinh(image),
                                      3, as.vector),
                                disk = as.vector(disk))
-  # longImage_background <- data.frame(apply(asinh(background),3, as.vector),
-  # disk = FALSE) long_Image_all_disk <- longImage_disk %>%
-  # dplyr::filter(disk == TRUE) long_Image_all_disk <-
-  # as.data.frame(long_Image_all_disk)
   
-  
-  # long_image_2 <- rbind(long_Image_all_disk, longImage_background)
   long_image_2 <- longImage_disk
   
   fit <- lm(disk ~ . - disk, data = long_image_2)
@@ -305,7 +299,7 @@ CytSeg <- function(nmask,
   cmask4 <- EBImage::propagate(cytpred, nmask, cell)
   justdisk <- EBImage::propagate(disk, nmask, cell)
   
-  # output<-list(cmask4,cmaskdisk, cell1, disk, justdisk)
+  
   return(EBImage::Image(cmask4))
   
 }
@@ -333,11 +327,6 @@ cytSegParallel <- function(nmask,
   )
 }
 
-#list1 <- c(1, 2, 3, 4, 5)
-#list2 <- c(6, 7, 8, 9, 10)
-#test.function <- function(list1, list2) {
-#  return(list1 + list2)
-#}
 
 ## Marker Model ## Cyt segmentation based on a specified cytoplasmic marker ##
 
@@ -347,18 +336,10 @@ CytSeg2 <- function(nmask,
                     size_selection = 5,
                     smooth = 1,
                     normalize = c("maxThresh", "asinh")) {
-  cytpred <-
-    image[, , channel]  #cytpred is the target protein for this channel
+ 
   
-  cytpred <- image[, , channel[1]]
-  if (length(channel) >
-      1) {
-    for (i in 1:length(channel) -
-         1) {
-      cytpred <- cytpred + image[, , channel[i + 1]]
-    }
-    cytpred <- cytpred / length(channel)
-  }
+  cytpred <- EBImage::Image(apply(image[, , tissue_index], c(1, 2),
+                  mean))
   
   
   if ("maxThresh" %in% normalize) {
