@@ -10,8 +10,6 @@
 #'
 #' image.mask <- calcTissueMaskParallel(image = image.list, tissue_index = c(2,3,4), cores = 40)
 #'
-#' @export calcTissueMaskParallel
-#' @rdname calcTissueMaskParallel
 #'
 #' @importFrom BiocParallel bplapply
 #' @importFrom EBImage normalize otsu bwlabel
@@ -47,6 +45,10 @@ calcTissueMask <-
         
         if (is.null(tissue_index))
             tissue_index <- seq_len(dim(image)[3])
+        
+        if(is(tissue_index, "character"))
+          tissue_index <- intersect(tissue_index, dimnames(image)[[3]])
+        
         
         tissue <- apply(image[, , tissue_index], c(1, 2),
                         mean)  # add intesities of these markers to try and highlight the tissue structure.

@@ -8,7 +8,7 @@ calcTissueMaskParallel(
   image,
   tissue_index = NULL,
   size_selection = 10,
-  BPPARAM = BPPARAM
+  cores = 1
 )
 }
 \arguments{
@@ -27,5 +27,6 @@ Calculates the tissue mask of a given image
 \examples{
 
 image.mask <- calcTissueMaskParallel(image = image.list, tissue_index = c(2,3,4), cores = 40)
+
 
 }

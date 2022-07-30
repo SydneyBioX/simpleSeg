@@ -15,6 +15,7 @@ simpleSeg(
   tolerance = NULL,
   ext = 1,
   discSize = 3,
+  tissue = NULL,
   cores = 1
 )
 }
@@ -29,7 +30,7 @@ simpleSeg(
 
 \item{smooth}{The amount of smoothing to be applied to the nuclei marker channel}
 
-\item{transform}{A transformation or list of transformations / normalisations to be performed prior to nuclei / cytoplasm identification. Accepted vales: "sqrt", "asinh", "norm99" and "maxThresh"}
+\item{transform}{A transformation or list of transformations / normalisations to be performed prior to nuclei / cytoplasm identification. Accepted vales: "sqrt", "asinh", "norm99", "maxThresh" and "tissueMask"}
 
 \item{watershed}{Method used to perform watershed. Can be "distance" or "combine"}
 
@@ -38,6 +39,8 @@ simpleSeg(
 \item{ext}{Radius of the neighborhood in pixels for the detection of neighboring objects. Higher value smooths out small objects.}
 
 \item{discSize}{The size of dilation around nuclei to create cell disk}
+
+\item{tissue}{Channels to be used to create the tissue mask, can be indexes or marker names.}
 
 \item{cores}{The number or cores for parallel processing}
 }

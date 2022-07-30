@@ -23,18 +23,17 @@ nucSeg <- function(image,
                    discSize = 3,
                    wholeCell = TRUE,
                    transform = NULL,
-                   tissueIndex = NULL,
-                   tissueMask = FALSE) {
+                   tissueIndex = NULL) {
   
   
   
   
   # Prepare matrix use to segment nuclei
-  if (tissueMask == TRUE){ # calculate tissue mask
+  if ("tissueMask" %in% transform){ # calculate tissue mask
     tissueMask <- calcTissueMask(image,
                                    tissueIndex) # separate tissue from background
     
-    image <- sweep(image, c(1,2), tissueMask, "*")
+    image <- EBImage::Image(sweep(image, c(1,2), tissueMask, "*"))
     
   }
 
@@ -139,7 +138,6 @@ nucSegParallel <- function(image,
                            wholeCell = TRUE,
                            watershed = "combine",
                            transform = NULL,
-                           tissueMask = FALSE,
                            tissueIndex = NULL,
                            BPPARAM = BiocParallel::SerialParam()) {
   output <- BiocParallel::bplapply(
@@ -154,7 +152,6 @@ nucSegParallel <- function(image,
     smooth = smooth,
     wholeCell = wholeCell,
     transform = transform,
-    tissueMask = tissueMask,
     tissueIndex = tissueIndex,
     BPPARAM = BPPARAM
   )
@@ -166,14 +163,6 @@ nucSegParallel <- function(image,
   
   #Default, assuming nucleus_index is an integer
   ind <- nucleus_index
-  
-  if (tissueMask){ # calculate tissue mask
-    useTissueMask <- calcTissueMask(image,
-                                      tissueIndex) # separate tissue from background
-    
-    image <- sweep(image, c(1,2), useTissueMask, "*")
-    
-  }
 
   if("PCA" %in% nucleus_index){
     image <- apply(image, 3, function(x){
@@ -231,7 +220,8 @@ nucSegParallel <- function(image,
                   "norm99" = .norm99(nuc),
                   "asinh" = asinh(nuc),
                   "maxThresh" = nuc / max(nuc, na.rm = TRUE),
-                  "sqrt" = sqrt(nuc)
+                  "sqrt" = sqrt(nuc),
+                  "tissueMask" = nuc
     )
   }
   
