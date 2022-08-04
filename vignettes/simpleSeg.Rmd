@@ -45,10 +45,10 @@ devtools::install_github("SydneyBioX/simpleSeg")
 ```
 
 # Overview
-`simpleSeg` provides a structured pipeline for segmentation of cellular tiff stacks and the normalization of features, priming cells for classification / clustering
+`simpleSeg` provides a structured pipeline for segmentation of cellular tiff stacks and the normalization of features, priming cells for classification / clustering.
 
-# Quick start
-`simpleSeg` accepts an image, list of images, or CytoImageList as input and generates a CytoImageList of masks as output.
+
+# Load example data
 
 
 ```{r}
@@ -74,11 +74,10 @@ mcols(images)$ImageNb <- names(images)
 
 ```
 
-
-The minimum input required is the image/image list and the nuclei marker to be used.
+# Quick start
+`simpleSeg` accepts an `Image`, `list` of `Image`'s, or `CytoImageList` as input and generates a `CytoImageList` of masks as output. The minimum input required is an `Image` and the nuclei marker to be used.
 
 # Segmentation
-## Quick Started
 
 By default, `simpleSeg` identifies nuclei marker expression using principal component analysis and individual nuclei via watershedding. Nuclei are dilated out by 3 pixels to capture the cytoplasm.
 
@@ -105,13 +104,7 @@ cell.sce <- measureObjects(masks, images, img_id = "ImageNb")
 ```
 
 ## Methods of watershedding
-The user may specify how watershedding is to be performed. `watershed = "distance"` (above) performs watershedding on a distance map of the thresholded nuclei signal.
-
-`watershed = "combine"` (default; below) multiplies this distance map by the raw nuclei marker signal, thus incorporating some information as to the location of the nuclei into the watershedding process.
-
-
-## Tissue mask
-When the entirety of a circular tissue sample is encompassed within an image, the user may with to isolate this circular area, and remove background noise from the remainder of the image. This process is facilitated using the `tissueMask` parameter in `transforms`, which, when selected creates a mask of the tissue within the image. Specified tissue channels can be specified in the `tissueIndex` parameter, by default all channels are used.
+The user may specify how watershedding is to be performed. The default is `watershed = "combine"` which multiplies this distance map by the raw nuclei marker signal, thus incorporating some information as to the location of the nuclei into the watershedding process. Other options include `watershed = "distance"` which performs watershedding on a distance map of the thresholded nuclei signal and `watershed = "intensity"` which performs watershedding using the intensity of the nuclei marker.
 
 
 ## Methods of cell body identification
@@ -188,5 +181,7 @@ cell.sce.norm <- normalizeCells(cellSCE,
 sessionInfo()
 ```
 
+<!-- ## Tissue mask -->
+<!-- When the entirety of a circular tissue sample is encompassed within an image, the user may with to isolate this circular area, and remove background noise from the remainder of the image. This process is facilitated using the `tissueMask` parameter in `transforms`, which, when selected creates a mask of the tissue within the image. Specified tissue channels can be specified in the `tissueIndex` parameter, by default all channels are used. -->
 
 
