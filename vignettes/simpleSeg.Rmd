@@ -48,32 +48,34 @@ devtools::install_github("SydneyBioX/simpleSeg")
 `simpleSeg` provides a structured pipeline for segmentation of cellular tiff stacks and the normalization of features, priming cells for classification / clustering
 
 # Quick start
-`simpleSeg` accepts an image, image list or CytoImageList as input, and generates a CytoImageList of masks as output.
+`simpleSeg` accepts an image, list of images, or CytoImageList as input and generates a CytoImageList of masks as output.
+
 
 ```{r}
-# Reading in sample data
-data(pancreasImages)
-summary(pancreasImages)
-```
 
-```{r}
-pathToImages <- "/albona/nobackup2/anicoll/simpleSeg/Data"
+# Get path to image directory
+pathToImages <- system.file("extdata", package = "simpleSeg")
 
 # Get directories of images
 imageDirs <- dir(pathToImages, full.names = TRUE)
-
+names(imageDirs) <- dir(pathToImages, full.names = FALSE)
 
 # Get files in each directory
 files <- sapply(imageDirs, list.files, pattern = "tif", full.names = TRUE, simplify = FALSE)
 
 # Read files with readImage from EBImage
-images <- lapply(imageDirs, EBImage::readImage, as.is = TRUE)
+images <- lapply(files, EBImage::readImage, as.is = TRUE)
 
-images.cyto <- CytoImageList(images)
+# Convert to cytoImageList
+images <- cytomapper::CytoImageList(images)
+mcols(images)$ImageNb <- names(images)
+
+
+
 ```
 
 
-The minimum input required is the image/image list and the nuclei marker to be used. 
+The minimum input required is the image/image list and the nuclei marker to be used.
 
 # Segmentation
 ## Quick Started
@@ -83,25 +85,23 @@ By default, `simpleSeg` identifies nuclei marker expression using principal comp
 The user may specify the image transformation used using the `transform` argument.
 
 ```{r, out.width = "400px"}
-masks <- simpleSeg::simpleSeg(images.cyto, 
-                   transform = c("sqrt"), 
-                   watershed = "distance")
+masks <- simpleSeg::simpleSeg(images,
+                              nucleus = "HH3",
+                              transform = "sqrt")
+
 display(colorLabels(masks[[1]]))
 
-cells <- rgbImage(green = 0.5 * images[[1]][,,32], 
-                  blue = 0.5 * images[[1]][,,16], 
-                  red = 0.5 * images[[1]][,,27])
-segmented <- paintObjects(masks[[1]], cells, col='#ffffff')
+imageRGB <- rgbImage(green = 0.5 * images[[1]][,,"Nuc"],
+                  blue = 0.5 * images[[1]][,,"COLI"],
+                  red = 0.5 * images[[1]][,,"HLADRDPDQ"])
+segmented <- paintObjects(masks[[1]], imageRGB, col='#ffffff')
 display(segmented)
 ```
 
 
 The `measureObjects` function from the `cytomapper` package can then be used to generate a `SingleCellExperement` object from the images and masks
 ```{r, out.width = "400px"}
-mcols(masks)$ImageNb <- c("1", "2", "3")
-mcols(images.cyto)$ImageNb <- c("1", "2", "3")
-
-cell.sce <- measureObjects(masks, images.cyto, img_id = "ImageNb")
+cell.sce <- measureObjects(masks, images, img_id = "ImageNb")
 ```
 
 ## Methods of watershedding
@@ -115,48 +115,50 @@ When the entirety of a circular tissue sample is encompassed within an image, th
 
 
 ## Methods of cell body identification
-The cell body can also be identified in `simpleSeg` using models of varying complexity, specified with the `cellBody` argument. 
+The cell body can also be identified in `simpleSeg` using models of varying complexity, specified with the `cellBody` argument.
 
 
 
 ### Dilatation
-The default and most basic is dilation (`cellBody = "dilate"`). The size of the dilatation in pixels may be specified with the `discDize` argument. 
+The default and most basic is dilation (`cellBody = "dilate"`). The size of the dilatation in pixels may be specified with the `discDize` argument.
 ```{r, out.width = "400px"}
-masks <- simpleSeg::simpleSeg(images.cyto, 
+masks <- simpleSeg::simpleSeg(images,
                    nucleus = 25,
-                   transform = "asinh",
+                   transform = "sqrt",
                    cellBody = "dilate",
                    discSize = 3)
 display(colorLabels(masks[[1]]))
 
-segmented <- paintObjects(masks[[1]], cells, col='#ffffff')
+segmented <- paintObjects(masks[[1]], imageRGB, col='#ffffff')
 display(segmented)
 ```
 
 
 ### Disc Model
-`cellBody = "diskModel` uses all the markers to predict the presence of dilated 'discs' around the nuclei. The model therefore learns which markers are typically present in the cell cytoplasm and generates a mask based on this. 
+`cellBody = "diskModel` uses all the markers to predict the presence of dilated 'discs' around the nuclei. The model therefore learns which markers are typically present in the cell cytoplasm and generates a mask based on this.
 ```{r, out.width = "400px"}
-masks <- simpleSeg::simpleSeg(images.cyto, 
+masks <- simpleSeg::simpleSeg(images,
                    nucleus = 25,
-                   transform = "asinh",
+                   transform = "sqrt",
                    cellBody = "discModel")
 display(colorLabels(masks[[1]]))
 
-segmented <- paintObjects(masks[[1]], cells, col='#ffffff')
+segmented <- paintObjects(masks[[1]], imageRGB, col='#ffffff')
 display(segmented)
 ```
 
+
+
 ### Marker model
-Finally the user may specify 1 or multiple dedicated cytoplasm markers to predict the cytoplasm. This can be done using `cellBody = [marker name/index]` as below.
+Finally the user may specify one or multiple dedicated cytoplasm markers to predict the cytoplasm. This can be done using `cellBody = [marker name/index]` as below.
 ```{r, out.width = "400px"}
-masks <- simpleSeg::simpleSeg(images.cyto,
+masks <- simpleSeg::simpleSeg(images,
                    nucleus = 25,
-                   transform = "asinh",
+                   transform = "sqrt",
                    cellBody = 26)
 display(colorLabels(masks[[1]]))
 
-segmented <- paintObjects(masks[[1]], cells, col='#ffffff')
+segmented <- paintObjects(masks[[1]], imageRGB, col='#ffffff')
 display(segmented)
 
 ```
@@ -165,20 +167,21 @@ display(segmented)
 # Parallel Processing
 `simpleSeg` also supports parallel processing, with the `cores` argument being used to specify how many cores should be used.
 
-```{r}
-masks <- simpleSeg::simpleSeg(images.cyto,
+```{r eval = FALSE}
+masks <- simpleSeg::simpleSeg(images,
                               cores = 5)
 ```
+
+
 # Normalizing cells
-Once cellular features have been extracted into a SingleCellExperement or dataframe, these features may then be normalized using the `normalizeCells`function. any number of Transformations: `asinh`, `sqrt`. and Normalization methods `mean`(dividing the marker intensities by their mean), `minMax` (subtracts the minimum value and scales markers between 0 and 1), `trim99` (sets the highest 1% of values to the value of the 99th percentile), `PC1` (removes the 1st principle component) can be performed with 1 call of the function, in the order specified by the user.
+Once cellular features have been extracted into a SingleCellExperement or dataframe, these features may then be normalized using the `normalizeCells`function. any number of Transformations: `asinh`, `sqrt`. and Normalization methods `mean`(dividing the marker intensities by their mean), `minMax` (subtracts the minimum value and scales markers between 0 and 1), `trim99` (sets the highest 1% of values to the value of the 99th percentile), `PC1` (removes the 1st principle component) can be performed with one call of the function, in the order specified by the user.
 ```{r}
-cell.sce.norm <- normalizeCells(cell.sce,
-                                markers = c(2:39),
+cell.sce.norm <- normalizeCells(cellSCE,
                                 assayIn = "counts",
-                                assayOut = "counts.norm",
+                                assayOut = "norm",
                                 imageID = "imageNb",
-                                transformation = "asinh",
-                                method = c("mean", "trim99"))
+                                transformation = "sqrt",
+                                method = c("trim99", "minmax"))
 ```
 ## Session Info
 ```{r}
