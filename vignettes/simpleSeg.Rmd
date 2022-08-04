@@ -73,7 +73,7 @@ images <- lapply(files, EBImage::readImage, as.is = TRUE)
 
 # Convert to cytoImageList
 images <- cytomapper::CytoImageList(images)
-mcols(images)$ImageNb <- names(images)
+mcols(images)$imageID <- names(images)
 
 
 
@@ -126,7 +126,7 @@ display(segmented)
 In order to characterise the phenotypes of each of the segmented cells, `measureObjects` from `cytomapper` will calculate the average intensity of each channel within each cell as well as a few morphological features. The channel intensities will be stored in the `counts assay` in a `SingleCellExperiment`. Information on the spatial location of each cell is stored in `colData` in the `m.cx` and `m.cy` columns. In addition to this, it will propogate the information we have store in the `mcols` of our `CytoImageList` in the `colData` of the resulting `SingleCellExperiment`. 
 
 ```{r, out.width = "400px"}
-cellSCE <- cytomapper::measureObjects(masks, images, img_id = "ImageNb")
+cellSCE <- cytomapper::measureObjects(masks, images, img_id = "imageID")
 ```
 
 
@@ -204,9 +204,9 @@ Once cellular features have been extracted into a SingleCellExperement or datafr
 cellSCE <- normalizeCells(cellSCE,
                           assayIn = "counts",
                           assayOut = "norm",
-                          imageID = "imageNb",
+                          imageID = "imageID",
                           transformation = "sqrt",
-                          method = c("trim99", "minmax"))
+                          method = c("trim99", "minMax"))
 ```
 
 
@@ -217,7 +217,7 @@ We could check to see if the marker intensities of each cell require some form o
 ```{r, fig.width=5, fig.height=5}
 
 # Extract marker data and bind with information about images
-df <- as.data.frame(cbind(colData(cells), t(assay(cells, "counts"))))
+df <- as.data.frame(cbind(colData(cellSCE), t(assay(cellSCE, "counts"))))
 
 # Plots densities of PanKRT for each image.
 ggplot(df, aes(x = PanKRT, colour = imageID)) + 
@@ -233,7 +233,7 @@ WWe can see that the normalised data stored in the norm assay appears more bimod
 ```{r, fig.width=5, fig.height=5}
 
 # Extract normalised marker information.
-df <- as.data.frame(cbind(colData(cells), t(assay(cells, "norm"))))
+df <- as.data.frame(cbind(colData(cellSCE), t(assay(cellSCE, "norm"))))
 
 # Plots densities of normalised PanKRT for each image.
 ggplot(df, aes(x = PanKRT, colour = imageID)) + 

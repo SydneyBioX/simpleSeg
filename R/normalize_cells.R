@@ -144,7 +144,7 @@ normalizeCells <- function(cells,
       
       return(cells)
     }
-    if(is.null(transformation) == FALSE){
+    if(!is.null(transformation)){
       for (i in 1:length(transformation)){
         cells[, markers] <- switch(transformation[i],
                         "asinh" = asinh(cells[, markers]),
@@ -153,7 +153,7 @@ normalizeCells <- function(cells,
       }
     }
     
-    if (is.null(method) == FALSE){
+    if (!is.null(method)){
       for (i in 1:length(method)){
         cells <- switch(method[i],
                         "mean" = meandiv(cells, markers, imageID),

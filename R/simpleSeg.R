@@ -87,8 +87,8 @@ simpleSeg <- function(image,
       names(cyto.nmask) <- c(1:length(cyto.nmask))
     }
     
-    S4Vectors::mcols(cyto.nmask) <-
-      S4Vectors::DataFrame(imageID = names(cyto.nmask))
+    if(is(image, "CytoImageList")) mcols(cyto.nmask) <- mcols(image)
+    S4Vectors::mcols(cyto.nmask)$imageID <- names(image)
     objectNum <- as.list(sapply(cyto.nmask, max))
     mcols(cyto.nmask)$objectNum <- objectNum
     return(cyto.nmask)
@@ -116,8 +116,8 @@ simpleSeg <- function(image,
       names(image) <- c(1:length(image))
     }
     
-    S4Vectors::mcols(cyto.mask) <-
-      S4Vectors::DataFrame(imageID = names(image))
+    if(is(image, "CytoImageList")) mcols(cyto.mask) <- mcols(image)
+    S4Vectors::mcols(cyto.mask)$imageID <- names(image)
     objectNum <- as.list(sapply(cyto.mask, max))
     mcols(cyto.mask)$objectNum <- objectNum
     
@@ -147,8 +147,9 @@ simpleSeg <- function(image,
       names(image) <- c(1:length(image))
     }
     
-    S4Vectors::mcols(cyto.mask) <-
-      S4Vectors::DataFrame(imageID = names(image))
+    if(is(image, "CytoImageList")) mcols(cyto.mask) <- mcols(image)
+    S4Vectors::mcols(cyto.mask)$imageID <- names(image)
+    
     objectNum <- as.list(sapply(cyto.mask, max))
     mcols(cyto.mask)$objectNum <- objectNum
     return(cyto.mask)
