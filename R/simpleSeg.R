@@ -80,6 +80,11 @@ simpleSeg <- function(image,
   if (cellBody %in% c("dilate", "none")) {
     nmask <- sapply(nmask, EBImage::Image, simplify = FALSE)
     cyto.nmask <- cytomapper::CytoImageList(nmask)
+    
+    if (is.null(names(cyto.nmask))){
+      names(cyto.nmask) <- c(1:length(cyto.nmask))
+    }
+    
     S4Vectors::mcols(cyto.nmask) <-
       S4Vectors::DataFrame(imageID = names(cyto.nmask))
     objectNum <- as.list(sapply(cyto.nmask, max))
@@ -104,6 +109,11 @@ simpleSeg <- function(image,
     }
     
     cyto.mask <- cytomapper::CytoImageList(cellList)
+    
+    if (is.null(names(image))){
+      names(image) <- c(1:length(image))
+    }
+    
     S4Vectors::mcols(cyto.mask) <-
       S4Vectors::DataFrame(imageID = names(image))
     objectNum <- as.list(sapply(cyto.mask, max))
@@ -130,6 +140,11 @@ simpleSeg <- function(image,
       }
     
     cyto.mask <- cytomapper::CytoImageList(cellList)
+    
+    if (is.null(names(image))){
+      names(image) <- c(1:length(image))
+    }
+    
     S4Vectors::mcols(cyto.mask) <-
       S4Vectors::DataFrame(imageID = names(image))
     objectNum <- as.list(sapply(cyto.mask, max))

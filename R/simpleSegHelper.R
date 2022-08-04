@@ -338,7 +338,7 @@ CytSeg2 <- function(nmask,
                     normalize = c("maxThresh", "asinh")) {
  
   
-  cytpred <- EBImage::Image(apply(image[, , tissue_index], c(1, 2),
+  cytpred <- EBImage::Image(apply(image[, , channel], c(1, 2),
                   mean))
   
   
