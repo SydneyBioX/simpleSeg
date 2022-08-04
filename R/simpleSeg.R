@@ -59,6 +59,8 @@ simpleSeg <- function(image,
     wholeCell <- TRUE
   }
   
+  x = runif(1)
+  
   BPPARAM <- generateBPParam(cores)
   
   nmask <- nucSegParallel(

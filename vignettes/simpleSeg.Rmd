@@ -22,7 +22,7 @@ output:
   BiocStyle::html_document
 ---
   
-  ```{r, include = FALSE}
+```{r, include = FALSE}
 knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>"
@@ -34,6 +34,9 @@ library(BiocStyle)
 ```{r warning=FALSE, message=FALSE}
 # load required packages
 library(simpleSeg)
+library(ggplot2)
+library(EBImage)
+library(cytomapper)
 ```
 
 # Installation
@@ -83,7 +86,7 @@ mcols(images)$ImageNb <- names(images)
 
 Here we will use the histone H3 channel in the image as a nuclei marker for segmentation. By default `simpleseg` will isolate individual nuclei by watershedding using a combination of the intensity of this marker and a distance map. Nuclei are dilated out by 3 pixels to capture the cytoplasm. The user may also specify simple image transformations using using the `transform` argument.
 
-```{r, out.width = "400px"}
+```{r}
 
 masks <- simpleSeg::simpleSeg(images,
                               nucleus = "HH3",
