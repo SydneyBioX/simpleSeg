@@ -182,8 +182,7 @@ nucSegParallel <- function(image,
       
       PC <- pca$x[,usePC]
       PC <- PC*sign(cor(PC, image.long[,nucleus_index[nucleus_index != "PCA"][1]]))
-    }
-    else{
+    }else{
       PC <- pca$x[,usePC]
     }
   
@@ -199,7 +198,7 @@ nucSegParallel <- function(image,
   if(length(ind)>1) nuc <- apply(nuc, c(1,2), mean)
   nuc <- EBImage::gblur(nuc, smooth)
   
-  nuc
+  nuc - min(nuc)
   
 }
 
