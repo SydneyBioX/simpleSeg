@@ -108,7 +108,7 @@ cell.sce <- measureObjects(masks, images.cyto, img_id = "ImageNb")
 The user may specify how watershedding is to be performed. `watershed = "distance"` (above) performs watershedding on a distance map of the thresholded nuclei signal.
 
 `watershed = "combine"` (default; below) multiplies this distance map by the raw nuclei marker signal, thus incorporating some information as to the location of the nuclei into the watershedding process.
-ay(segmented)
+
 
 ## Tissue mask
 When the entirety of a circular tissue sample is encompassed within an image, the user may with to isolate this circular area, and remove background noise from the remainder of the image. This process is facilitated using the `tissueMask` parameter in `transforms`, which, when selected creates a mask of the tissue within the image. Specified tissue channels can be specified in the `tissueIndex` parameter, by default all channels are used.
