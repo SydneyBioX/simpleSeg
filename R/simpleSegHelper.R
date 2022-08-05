@@ -14,8 +14,8 @@
 ## NucSeg ##
 #' @importFrom EBImage Image
 nucSeg <- function(image,
-                   nucleus_index = 1,
-                   size_selection = 10,
+                   nucleusIndex = 1,
+                   sizeSelection = 10,
                    smooth = 1,
                    tolerance = 0.01,
                    watershed = "combine",
@@ -37,7 +37,7 @@ nucSeg <- function(image,
     
   }
 
-  nuc <- .prepNucSignal(image, nucleus_index, smooth)
+  nuc <- .prepNucSignal(image, nucleusIndex, smooth)
   
 
   if (is.null(transform) == FALSE) nuc <- .Transform(nuc, transform)
@@ -52,8 +52,8 @@ nucSeg <- function(image,
   # Size Selection
   nMaskLabel <- EBImage::bwlabel(nMask*1)
   tabNuc <- table(nMaskLabel)
-  nMask[nMaskLabel %in% names(which(tabNuc <= size_selection))] <- 0  
-  nMaskLabel[nMaskLabel %in% names(which(tabNuc <= size_selection))] <- 0 
+  nMask[nMaskLabel %in% names(which(tabNuc <= sizeSelection))] <- 0  
+  nMaskLabel[nMaskLabel %in% names(which(tabNuc <= sizeSelection))] <- 0 
   
   
   if(watershed == "distance"){
@@ -100,7 +100,7 @@ nucSeg <- function(image,
   
   
   # Add distance to nuc signal
-  cellRadius <- 2*floor(sqrt(size_selection/pi)/2)+1
+  cellRadius <- 2*floor(sqrt(sizeSelection/pi)/2)+1
   nuc <- filter2(nuc, makeBrush(cellRadius, shape='disc'))
   nuc <- nuc * nMask
   
@@ -113,7 +113,7 @@ nucSeg <- function(image,
   
   # Size Selection
   tabNuc <- table(wMask)
-  wMask[wMask %in% names(which(tabNuc <= size_selection))] <- 0  
+  wMask[wMask %in% names(which(tabNuc <= sizeSelection))] <- 0  
   
   if(wholeCell){
     kern <- EBImage::makeBrush(discSize, shape = "disc")
@@ -129,8 +129,8 @@ nucSeg <- function(image,
 ## Nuc Seg Parallel ##
 
 nucSegParallel <- function(image,
-                           nucleus_index = 1,
-                           size_selection = 10,
+                           nucleusIndex = 1,
+                           sizeSelection = 10,
                            smooth = 1,
                            tolerance = 0.01,
                            ext = 1,
@@ -143,12 +143,12 @@ nucSegParallel <- function(image,
   output <- BiocParallel::bplapply(
     image,
     nucSeg,
-    nucleus_index = nucleus_index,
+    nucleusIndex = nucleusIndex,
     tolerance = tolerance,
     watershed = watershed,
     ext = ext,
     discSize = discSize,
-    size_selection = size_selection,
+    sizeSelection = sizeSelection,
     smooth = smooth,
     wholeCell = wholeCell,
     transform = transform,
@@ -159,12 +159,12 @@ nucSegParallel <- function(image,
 
 
 
-.prepNucSignal <- function(image, nucleus_index, smooth){
+.prepNucSignal <- function(image, nucleusIndex, smooth){
   
-  #Default, assuming nucleus_index is an integer
-  ind <- nucleus_index
+  #Default, assuming nucleusIndex is an integer
+  ind <- nucleusIndex
 
-  if("PCA" %in% nucleus_index){
+  if("PCA" %in% nucleusIndex){
     image <- apply(image, 3, function(x){
       x <- (x)
       EBImage::gblur(x, smooth)
@@ -176,12 +176,12 @@ nucSegParallel <- function(image,
     pca <- prcomp(image.long[, apply(image.long, 2, sd)>0])
     
     usePC <- 1
-    if(any(nucleus_index%in%colnames(image.long))){
-      ind <- intersect(nucleus_index, colnames(image.long))
-      usePC <- which.max(abs(apply(pca$x, 2, cor, image.long[,nucleus_index[nucleus_index != "PCA"][1]])))
+    if(any(nucleusIndex%in%colnames(image.long))){
+      ind <- intersect(nucleusIndex, colnames(image.long))
+      usePC <- which.max(abs(apply(pca$x, 2, cor, image.long[,nucleusIndex[nucleusIndex != "PCA"][1]])))
       
       PC <- pca$x[,usePC]
-      PC <- PC*sign(cor(PC, image.long[,nucleus_index[nucleus_index != "PCA"][1]]))
+      PC <- PC*sign(cor(PC, image.long[,nucleusIndex[nucleusIndex != "PCA"][1]]))
     }else{
       PC <- pca$x[,usePC]
     }
@@ -191,8 +191,8 @@ nucSegParallel <- function(image,
     return(imagePC)
   }
   
-  if(is(nucleus_index, "character"))
-    ind <- intersect(nucleus_index, dimnames(image)[[3]])
+  if(is(nucleusIndex, "character"))
+    ind <- intersect(nucleusIndex, dimnames(image)[[3]])
   
   nuc <- image[, , ind]
   if(length(ind)>1) nuc <- apply(nuc, c(1,2), mean)
@@ -237,7 +237,7 @@ nucSegParallel <- function(image,
 
 CytSeg <- function(nmask,
                    image,
-                   size_selection = 5,
+                   sizeSelection = 5,
                    smooth = 1,
                    discSize = 3,
                    normalize = c("maxThresh", "asinh")) {
@@ -292,7 +292,7 @@ CytSeg <- function(nmask,
   
   nuc_label <- EBImage::bwlabel(nmask)
   tnuc <- table(nuc_label)
-  nmask[nuc_label %in% names(which(tnuc <= size_selection))] <- 0
+  nmask[nuc_label %in% names(which(tnuc <= sizeSelection))] <- 0
   
   
   cmask4 <- EBImage::propagate(cytpred, nmask, cell)
@@ -307,7 +307,7 @@ CytSeg <- function(nmask,
 ## Cyt seg parallel ##
 cytSegParallel <- function(nmask,
                            image,
-                           size_selection = 5,
+                           sizeSelection = 5,
                            smooth = 1,
                            discSize = 3,
                            normalize = c("maxThresh", "asinh"),
@@ -317,7 +317,7 @@ cytSegParallel <- function(nmask,
     nmask,
     image,
     MoreArgs = list(
-      size_selection = size_selection,
+      sizeSelection = sizeSelection,
       smooth = smooth,
       discSize = discSize,
       normalize = normalize
@@ -332,7 +332,7 @@ cytSegParallel <- function(nmask,
 CytSeg2 <- function(nmask,
                     image,
                     channel = 2,
-                    size_selection = 5,
+                    sizeSelection = 5,
                     smooth = 1,
                     normalize = c("maxThresh", "asinh")) {
  
@@ -375,7 +375,7 @@ CytSeg2 <- function(nmask,
   
   nuc_label <- EBImage::bwlabel(nmask)
   tnuc <- table(nuc_label)
-  nmask[nuc_label %in% names(which(tnuc <= size_selection))] <- 0
+  nmask[nuc_label %in% names(which(tnuc <= sizeSelection))] <- 0
   
   
   cmask4 <- EBImage::propagate(cytpredpred, nmask, cell)
@@ -389,7 +389,7 @@ CytSeg2 <- function(nmask,
 cytSeg2Parallel <- function(nmask,
                             image,
                             channel = 2,
-                            size_selection = 5,
+                            sizeSelection = 5,
                             smooth = 1,
                             normalize = c("maxThresh", "asinh"),
                             BPPARAM = BiocParallel::SerialParam()) {
@@ -399,7 +399,7 @@ cytSeg2Parallel <- function(nmask,
     image,
     MoreArgs = list(
       channel = channel,
-      size_selection = size_selection,
+      sizeSelection = sizeSelection,
       smooth = smooth,
       normalize = normalize
     ),
