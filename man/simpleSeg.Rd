@@ -20,27 +20,27 @@ simpleSeg(
 )
 }
 \arguments{
-\item{image}{An image or list of images or CytoImageList to be read into the function.}
+\item{image}{An image or list of images or CytoImageList to be read into the function}
 
-\item{nucleus}{The marker or list of markers corresponding to the nuclei marker/s. PCA can also be specified here}
+\item{nucleus}{The marker or list of markers corresponding to the nuclei marker/s. PCA can also be specified in addition to or implace of a marker}
 
-\item{cellBody}{Method of cytoplasm identification. Can be 'none', dilate', 'discModel' or the name of a dedicated cytoplasm markers}
+\item{cellBody}{Method of cytoplasm identification. Can be 'none', dilate', 'discModel' or the name of a dedicated cytoplasm marker}
 
-\item{sizeSelection}{Minimum pixels for an object to be recognised as signal and not noise}
+\item{sizeSelection}{Minimum pixels for an object to be recognised as a cell and not noise}
 
-\item{smooth}{The amount of smoothing to be applied to the nuclei marker channel}
+\item{smooth}{The amount of Gaussian smoothing to be applied to the image/s}
 
 \item{transform}{A transformation or list of transformations / normalisations to be performed prior to nuclei / cytoplasm identification. Accepted vales: "sqrt", "asinh", "norm99", "maxThresh" and "tissueMask"}
 
-\item{watershed}{Method used to perform watershed. Can be "distance" or "combine"}
+\item{watershed}{Method used to perform watersheding. Accepted values: "distance" or "combine"}
 
 \item{tolerance}{The minimum height of the object in the units of image intensity between its highest point (seed) and the point where it contacts another object (checked for every contact pixel). If the height is smaller than the tolerance, the object will be combined with one of its neighbors, which is the highest. Tolerance should be chosen according to the range of x. Default value is 1, which is a reasonable value if x comes from distmap}
 
 \item{ext}{Radius of the neighborhood in pixels for the detection of neighboring objects. Higher value smooths out small objects.}
 
-\item{discSize}{The size of dilation around nuclei to create cell disk}
+\item{discSize}{The size of dilation around nuclei to create cell disc/ capture cytoplasm}
 
-\item{tissue}{Channels to be used to create the tissue mask, can be indexes or marker names.}
+\item{tissue}{Channels to be used to create the tissue mask if specified in transforms.}
 
 \item{cores}{The number or cores for parallel processing}
 }
