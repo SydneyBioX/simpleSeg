@@ -3,14 +3,18 @@ Type: Package
 Title: A package to perform simple cell segmentation
 Version: 0.0.3
 Date: 2022-04-21
-Author: Alexander Nicholls, Nicolas Canete, Ellis Patrick
-Maintainer: Ellis Patrick <ellis.patrick@sydney.edu.au>
+Authors@R: c(person("Nicolas", "Canete", email = "nicolas.canete@sydney.edu.au",
+    role = c("aut")),
+    person("Ellis", "Patrick", email = "ellis.patrick@sydney.edu.au",
+    role = c("aut", "cre")),
+    person("Alexander", "Nicholls", email = "alexanderwnicholls@gmail.com",
+    role = c("aut")))
 VignetteBuilder: knitr
 Encoding: UTF-8
-biocViews: Classification, Survival
+biocViews: Classification, Survival, SingleCell, Normalization
 Depends: R (>= 4.1.0)
-Imports: knitr, BiocParallel, EBImage, parallel, terra, cytomapper, stats, spatstat.geom, S4Vectors
+Imports: knitr, BiocParallel, EBImage, parallel, terra, cytomapper, stats, spatstat.geom, S4Vectors, grDevices
 Suggests: BiocStyle
-Description: The package provides functionality to perform simple segmentation for multiplexed imaging technologies.
+Description: simpleSeg provides functionality for user friendly, watershed based segmentation on multiplexed cellular images in R, as well as for the normalization of single cell data obtained from multiple images
 License: GPL-3
 RoxygenNote: 7.2.0

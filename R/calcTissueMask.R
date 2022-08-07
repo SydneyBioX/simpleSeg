@@ -8,7 +8,6 @@
 
 #' @examples
 #'
-#' image.mask <- calcTissueMaskParallel(image = image.list, tissue_index = c(2,3,4), cores = 40)
 #'
 #'
 #' @importFrom BiocParallel bplapply
