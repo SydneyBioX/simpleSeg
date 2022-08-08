@@ -214,7 +214,7 @@ nucSegParallel <- function(image,
 
 .Transform <- function(nuc, transform) {
   
-  for (i in 1:length(transform)){
+  for (i in seq_along(transform)){
     nuc <- switch(transform[i],
                   "norm99" = .norm99(nuc),
                   "asinh" = asinh(nuc),

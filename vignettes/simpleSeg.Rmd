@@ -68,6 +68,7 @@ names(imageDirs) <- dir(pathToImages, full.names = FALSE)
 # Get files in each directory
 files <- sapply(imageDirs, list.files, pattern = "tif", full.names = TRUE, simplify = FALSE)
 
+#files <- files[3:4]
 # Read files with readImage from EBImage
 images <- lapply(files, EBImage::readImage, as.is = TRUE)
 

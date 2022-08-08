@@ -52,6 +52,9 @@ Perform simple segmentation of multiplexed cellular images
 }
 \examples{
 
-masks <- simpleSeg(imageList, nucleus = "H3", cellBody = "discModel", sizeSelection = 8, smooth = 1.2, transform = "sqrt", watershed = "combine", tolerance = 1, ext = 1, discSize = 3, cores = 5)
+pathToImages <- system.file("extdata", package = "simpleSeg")
+pancreaseImages <- readRDS("pancreaseImages.rds")
+
+masks <- simpleSeg(pancreasImages, nucleus = "H3", cellBody = "discModel", sizeSelection = 8, smooth = 1.2, transform = "sqrt", watershed = "combine", tolerance = 1, ext = 1, discSize = 3, cores = 5)
 
 }

@@ -40,6 +40,9 @@ Normalizes and transforms cell data in preparation for clustering (accepts dataf
 }
 \examples{
 
-cells.normalized <- normalizeCells(cells = cells.sce, markers = c('SMA', 'CD44', 'CD45', 'cyt-19'), assayIn = 'counts', assayOut = 'normCounts', imageID = 'ImageNb', transformation = 'asinh', method = 'trim99')
+pathToImages <- system.file("extdata", package = "simpleSeg")
+pancreaseSCE <- readRDS("pancreaseSCE.rds")
+
+cells.normalized <- normalizeCells(cells = pancreasSCE, markers = c('CD99', 'PIN', 'CD8a', 'CDH'), assayIn = 'counts', assayOut = 'normCounts', imageID = 'ImageNb', transformation = 'asinh', method = 'trim99')
 
 }

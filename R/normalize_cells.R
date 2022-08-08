@@ -12,8 +12,11 @@
 #' @return returns a dataframe with individual cells as rows and features as columns
 
 #' @examples
+#' 
+#' pathToImages <- system.file("extdata", package = "simpleSeg")
+#' pancreaseSCE <- readRDS("pancreaseSCE.rds")
 #'
-#' cells.normalized <- normalizeCells(cells = cells.sce, markers = c('SMA', 'CD44', 'CD45', 'cyt-19'), assayIn = 'counts', assayOut = 'normCounts', imageID = 'ImageNb', transformation = 'asinh', method = 'trim99')
+#' cells.normalized <- normalizeCells(cells = pancreasSCE, markers = c('CD99', 'PIN', 'CD8a', 'CDH'), assayIn = 'counts', assayOut = 'normCounts', imageID = 'ImageNb', transformation = 'asinh', method = 'trim99')
 #'
 #' @export normalizeCells
 #' @rdname normalizeCells
@@ -147,7 +150,7 @@ normalizeCells <- function(cells,
     #   return(cells)
     # }
     if(!is.null(transformation)){
-      for (i in 1:length(transformation)){
+      for (i in seq_along(transformation)){
         cells[, markers] <- switch(transformation[i],
                         "asinh" = asinh(cells[, markers]),
                         "sqrt" = sqrt(cells[,markers]))
@@ -156,7 +159,7 @@ normalizeCells <- function(cells,
     }
     
     if (!is.null(method)){
-      for (i in 1:length(method)){
+      for (i in seq_along(method)){
         cells <- switch(method[i],
                         "mean" = meandiv(cells, markers, imageID),
                         "minMax" = minMax(cells, markers, imageID),
