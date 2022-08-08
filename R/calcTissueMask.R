@@ -1,13 +1,3 @@
-#' Calculates the tissue mask of a given image
-#'
-#' @param image A multiplexed image or list of multiplexed images, can be a CytoImageList
-#' @param tissue_index a numerical index that corresponds to the tissue markers in the image object.
-#' @param BPPARAM The number of parallel processing cores to be used
-#'
-#' @return Tissue masks of given image/s (area of the image/s containing tissue)
-
-#' @examples
-#'
 #'
 #'
 #' @importFrom BiocParallel bplapply
@@ -20,22 +10,6 @@
 
 ############################## Tissue Mask Function
 ############################## ########################################
-calcTissueMaskParallel <-
-    function(image,
-             tissue_index = NULL,
-             size_selection = 10,
-             cores = 1) {
-      BPPARAM <- generateBPParam(cores)
-        
-        result <- BiocParallel::bplapply(
-            image,
-            calcTissueMask,
-            tissue_index = tissue_index,
-            size_selection = size_selection,
-            BPPARAM = BPPARAM
-        )
-        return(result)
-    }
 
 
 calcTissueMask <-

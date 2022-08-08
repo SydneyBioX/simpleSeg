@@ -29,6 +29,8 @@ normalizeCells(
 \item{transformation}{The transformation/s to be performed, default is NULL, accepted values: 'asinh' and 'sqrt'}
 
 \item{method}{The normalization method/s to be performed, default is NULL, accepted values: 'mean', 'minMax', 'trim99', 'PC1'}
+
+\item{cores}{The number or cores for parallel processing}
 }
 \value{
 returns a dataframe with individual cells as rows and features as columns

@@ -15,6 +15,6 @@ biocViews: Classification, Survival, SingleCell, Normalization
 Depends: R (>= 4.1.0)
 Imports: knitr, BiocParallel, EBImage, parallel, terra, cytomapper, stats, spatstat.geom, S4Vectors, grDevices
 Suggests: BiocStyle
-Description: simpleSeg provides functionality for user friendly, watershed based segmentation on multiplexed cellular images in R, as well as for the normalization of single cell data obtained from multiple images
+Description: simpleSeg provides functionality for user friendly, watershed based segmentation on multiplexed cellular images in R. simpleSeg can also be used for the normalization of single cell data obtained from multiple images.
 License: GPL-3
 RoxygenNote: 7.2.0
