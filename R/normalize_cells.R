@@ -13,9 +13,10 @@
 
 #' @examples
 #' 
+#' 
 #' pathToImages <- system.file("extdata", package = "simpleSeg")
-#' pancreaseSCE <- readRDS("pancreaseSCE.rds")
-#'
+#' fullPath <- paste(pathToImages, "/pancreasSCE.rds", sep="", collapse=NULL)
+#' pancreaseSCE <- readRDS(fullPath)
 #' cells.normalized <- normalizeCells(cells = pancreasSCE, markers = c('CD99', 'PIN', 'CD8a', 'CDH'), assayIn = 'counts', assayOut = 'normCounts', imageID = 'ImageNb', transformation = 'asinh', method = 'trim99')
 #'
 #' @export normalizeCells

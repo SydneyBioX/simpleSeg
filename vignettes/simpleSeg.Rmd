@@ -63,12 +63,14 @@ pathToImages <- system.file("extdata", package = "simpleSeg")
 
 # Get directories of images
 imageDirs <- dir(pathToImages, full.names = TRUE)
+
+
 names(imageDirs) <- dir(pathToImages, full.names = FALSE)
+imageDirs <- imageDirs[3:4]
 
 # Get files in each directory
 files <- sapply(imageDirs, list.files, pattern = "tif", full.names = TRUE, simplify = FALSE)
 
-#files <- files[3:4]
 # Read files with readImage from EBImage
 images <- lapply(files, EBImage::readImage, as.is = TRUE)
 
@@ -79,6 +81,18 @@ mcols(images)$imageID <- names(images)
 
 
 ```
+
+```{r}
+#test
+pathToImages <- system.file("extdata", package = "simpleSeg")
+
+fullPath <- paste(pathToImages, "/pancreasSCE.rds", sep="", collapse=NULL)
+
+pancreaseSCE <- readRDS(fullPath)
+
+```
+
+
 
 # Quick start
 `simpleSeg` accepts an `Image`, `list` of `Image`'s, or `CytoImageList` as input and generates a `CytoImageList` of masks as output. The minimum input required is an `Image` and the nuclei marker to be used.
