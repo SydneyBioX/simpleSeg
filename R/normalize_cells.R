@@ -10,13 +10,11 @@
 #' @param cores The number or cores for parallel processing
 #'
 #' @return returns a dataframe with individual cells as rows and features as columns
-
+#'
 #' @examples
 #' 
 #' 
-#' pathToImages <- system.file("extdata", package = "simpleSeg")
-#' fullPath <- paste(pathToImages, "/pancreasSCE.rds", sep="", collapse=NULL)
-#' pancreaseSCE <- readRDS(fullPath)
+#' data("pancreasSCE")
 #' cells.normalized <- normalizeCells(cells = pancreasSCE, markers = c('CD99', 'PIN', 'CD8a', 'CDH'), assayIn = 'counts', assayOut = 'normCounts', imageID = 'ImageNb', transformation = 'asinh', method = 'trim99')
 #'
 #' @export normalizeCells

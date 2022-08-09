@@ -62,11 +62,13 @@ In the following we will reanalyse three MIBI-TOF images from [(Risom et al, 202
 pathToImages <- system.file("extdata", package = "simpleSeg")
 
 # Get directories of images
-imageDirs <- dir(pathToImages, full.names = TRUE)
+
+imageDirs <- dir(pathToImages, "Point", full.names = TRUE)
+names(imageDirs) <- dir(pathToImages, "Point", full.names = FALSE)
 
 
-names(imageDirs) <- dir(pathToImages, full.names = FALSE)
-imageDirs <- imageDirs[3:4]
+
+
 
 # Get files in each directory
 files <- sapply(imageDirs, list.files, pattern = "tif", full.names = TRUE, simplify = FALSE)
@@ -82,15 +84,6 @@ mcols(images)$imageID <- names(images)
 
 ```
 
-```{r}
-#test
-pathToImages <- system.file("extdata", package = "simpleSeg")
-
-fullPath <- paste(pathToImages, "/pancreasSCE.rds", sep="", collapse=NULL)
-
-pancreaseSCE <- readRDS(fullPath)
-
-```
 
 
 
@@ -254,6 +247,10 @@ df <- as.data.frame(cbind(colData(cellSCE), t(assay(cellSCE, "norm"))))
 ggplot(df, aes(x = PanKRT, colour = imageID)) + 
   geom_density() + 
   theme(legend.position = "none")
+
+
+
+
 
 ```
 
