@@ -17,7 +17,7 @@
 #'
 #' @examples
 #' 
-#' data("pancreasSCE")
+#' data("pancreasImages")
 #' masks <- simpleSeg(pancreasImages, nucleus = "H3", cellBody = "discModel", sizeSelection = 8, smooth = 1.2, transform = "sqrt", watershed = "combine", tolerance = 1, ext = 1, discSize = 3, cores = 5)
 #'
 #' @export simpleSeg
