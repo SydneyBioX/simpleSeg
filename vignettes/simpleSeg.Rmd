@@ -1,5 +1,5 @@
 ---
-title: "Spatial Mixed-Effects Modelling with spicy"
+title: "simpleSeg"
 date: "`r BiocStyle::doc_date()`"
 params:
   test: FALSE
@@ -116,14 +116,24 @@ EBImage::display(colorLabels(masks[[1]]))
 The `plotPixels` function in `cytomapper` make it easy to overlay the masks on top of the intensities of 6 markers. Here we can see that the segmentation appears to be performing reasonably.
 
 ```{r}
+
 # Visualise segmentation performance another way.
-
-imageRGB <- rgbImage(green = 0.5 * images[[1]][,,"CD44"],
-                  blue = 0.5 * images[[1]][,,"HH3"],
-                  red = 0.5 * images[[1]][,,"GLUT1"])
-
-segmented <- paintObjects(masks[[1]], imageRGB, col='#FFFF00')
-display(segmented)
+cytomapper::plotPixels(image = images[1], 
+                       mask = masks[1], 
+                       img_id = "imageID", 
+                       colour_by = c("PanKRT", "GLUT1", "HH3", "CD3", "CD20"), 
+                       display = "single",
+                       colour = list(HH3 = c("black","blue"), 
+                                     CD3 = c("black","purple"),
+                                     CD20 = c("black","green"),
+                                     GLUT1 = c("black", "red"),
+                                     PanKRT = c("black", "yellow")),
+                       bcg = list(HH3 = c(0, 1, 1.5), 
+                                     CD3 = c(0, 1, 1.5),
+                                     CD20 = c(0, 1, 1.5),
+                                     GLUT1 = c(0, 1, 1.5),
+                                     PanKRT = c(0, 1, 1.5)),
+                       legend = NULL)
 
 
 ```
@@ -147,10 +157,10 @@ Method | Description
 <span style="font-family: 'Courier New', monospace;">"dilation"</span> |  <span style="font-family: 'Courier New', monospace;">Dilates the nuclei by an amount defined by the user. The size of the dilatation in pixels may be specified with the `discDize` argument.</span>
 <span style="font-family: 'Courier New', monospace;">"discModel"</span> | <span style="font-family: 'Courier New', monospace;">Uses all the markers to predict the presence of dilated 'discs' around the nuclei. The model therefore learns which markers are typically present in the cell cytoplasm and generates a mask based on this.</span>
 <span style="font-family: 'Courier New', monospace;">"marker"</span> | <span style="font-family: 'Courier New', monospace;">The user may specify one or multiple dedicated cytoplasm markers to predict the cytoplasm. This can be done using `cellBody = "marker name"/"index"`</span>
-<span style="font-family: 'Courier New', monospace;">"None"</span> |  <span style="font-family: 'Courier New', monospace;">The nuclei mask is returned directly</span>
+<span style="font-family: 'Courier New', monospace;">"None"</span> |  <span style="font-family: 'Courier New', monospace;">The nuclei mask is returned directly.</span>
 
 
-# Parallel Processing
+## Parallel Processing
 `simpleSeg` also supports parallel processing, with the `cores` argument being used to specify how many cores should be used.
 
 ```{r eval = FALSE}
@@ -159,7 +169,7 @@ masks <- simpleSeg::simpleSeg(images,
 ```
 
 
-## Summarise cell features.
+# Summarise cell features
 
 In order to characterise the phenotypes of each of the segmented cells, `measureObjects` from `cytomapper` will calculate the average intensity of each channel within each cell as well as a few morphological features. The channel intensities will be stored in the `counts assay` in a `SingleCellExperiment`. Information on the spatial location of each cell is stored in `colData` in the `m.cx` and `m.cy` columns. In addition to this, it will propogate the information we have store in the `mcols` of our `CytoImageList` in the `colData` of the resulting `SingleCellExperiment`. 
 
@@ -169,7 +179,7 @@ cellSCE <- cytomapper::measureObjects(masks, images, img_id = "imageID")
 
 # Normalizing cells
 
-Once cellular features have been extracted into a SingleCellExperement or dataframe, these features may then be normalized using the `normalizeCells`function. any number of Transformations: `asinh`, `sqrt`. and Normalization methods
+Once cellular features have been extracted into a SingleCellExperement or dataframe, these features may then be normalized using the `normalizeCells`function. any number of Transformations: `asinh`, `sqrt`. and Normalization methods.
 
 `mean`(Divides the marker cellular marker intensities by their mean), `minMax` (Subtracts the minimum value and scales markers between 0 and 1.), `trim99` (Sets the highest 1% of values to the value of the 99th percentile.), `PC1` (Removes the 1st principle component) can be performed with one call of the function, in the order specified by the user.
 
@@ -204,12 +214,13 @@ df <- as.data.frame(cbind(colData(cellSCE), t(assay(cellSCE, "counts"))))
 # Plots densities of PanKRT for each image.
 ggplot(df, aes(x = PanKRT, colour = imageID)) + 
   geom_density() + 
-  theme(legend.position = "none")
+  labs(x = "PanKRT expression") +
+  theme_minimal()
 
 ```
 
 
-WWe can see that the normalised data stored in the norm assay appears more bimodal, not perfect, but likely sufficient for clustering.
+We can see that the normalised data stored in the norm assay appears more bimodal, not perfect, but likely sufficient for clustering.
 
 
 ```{r, fig.width=5, fig.height=5}
@@ -220,7 +231,8 @@ df <- as.data.frame(cbind(colData(cellSCE), t(assay(cellSCE, "norm"))))
 # Plots densities of normalised PanKRT for each image.
 ggplot(df, aes(x = PanKRT, colour = imageID)) + 
   geom_density() + 
-  theme(legend.position = "none")
+  labs(x = "PanKRT expression") +
+  theme_minimal()
 
 
 
