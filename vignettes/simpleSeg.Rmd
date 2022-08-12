@@ -54,7 +54,7 @@ The `simpleSeg` package provides a structured pipeline for creating segmentation
 
 # Load example data
 
-In the following we will reanalyse three MIBI-TOF images from [(Risom et al, 2022)](https://www.sciencedirect.com/science/article/pii/S0092867421014860?via%3Dihub#!) profiling the spatial landscape of ductal carcinoma in situ (DCIS), which is a pre-invasive lesion that is thought to be a precursor to invasive breast cancer (IBC). These images are stored in the "extdata" folder in the package. When the path to this folder is identified, we can read these images into R using `readImage` from `EBImage` and store these as a `CytoImageList` using the `cytomapper` package.
+In the following we will reanalyse two MIBI-TOF images from [(Risom et al, 2022)](https://www.sciencedirect.com/science/article/pii/S0092867421014860?via%3Dihub#!) profiling the spatial landscape of ductal carcinoma in situ (DCIS), which is a pre-invasive lesion that is thought to be a precursor to invasive breast cancer (IBC). These images are stored in the "extdata" folder in the package. When the path to this folder is identified, we can read these images into R using `readImage` from `EBImage` and store these as a `CytoImageList` using the `cytomapper` package.
 
 ```{r}
 
@@ -85,14 +85,13 @@ mcols(images)$imageID <- names(images)
 ```
 
 
+ 
 
 
-# Quick start
-`simpleSeg` accepts an `Image`, `list` of `Image`'s, or `CytoImageList` as input and generates a `CytoImageList` of masks as output. The minimum input required is an `Image` and the nuclei marker to be used.
 
 # Segmentation
 
-Here we will use the histone H3 channel in the image as a nuclei marker for segmentation. By default `simpleseg` will isolate individual nuclei by watershedding using a combination of the intensity of this marker and a distance map. Nuclei are dilated out by 3 pixels to capture the cytoplasm. The user may also specify simple image transformations using using the `transform` argument.
+`simpleSeg` accepts an `Image`, `list` of `Image`'s, or `CytoImageList` as input and generates a `CytoImageList` of masks as output. Here we will use the histone H3 channel in the image as a nuclei marker for segmentation. By default `simpleseg` will isolate individual nuclei by watershedding using a combination of the intensity of this marker and a distance map. Nuclei are dilated out by 3 pixels to capture the cytoplasm. The user may also specify simple image transformations using using the `transform` argument.
 
 ```{r}
 
@@ -119,78 +118,36 @@ The `plotPixels` function in `cytomapper` make it easy to overlay the masks on t
 ```{r}
 # Visualise segmentation performance another way.
 
-imageRGB <- rgbImage(green = 0.5 * images[[1]][,,"HH3"],
-                  blue = 0.5 * images[[1]][,,"PanKRT"],
+imageRGB <- rgbImage(green = 0.5 * images[[1]][,,"CD44"],
+                  blue = 0.5 * images[[1]][,,"HH3"],
                   red = 0.5 * images[[1]][,,"GLUT1"])
 
-segmented <- paintObjects(masks[[1]], imageRGB, col='#ffffff')
+segmented <- paintObjects(masks[[1]], imageRGB, col='#FFFF00')
 display(segmented)
 
 
 ```
 
-## Summarise cell features.
-
-In order to characterise the phenotypes of each of the segmented cells, `measureObjects` from `cytomapper` will calculate the average intensity of each channel within each cell as well as a few morphological features. The channel intensities will be stored in the `counts assay` in a `SingleCellExperiment`. Information on the spatial location of each cell is stored in `colData` in the `m.cx` and `m.cy` columns. In addition to this, it will propogate the information we have store in the `mcols` of our `CytoImageList` in the `colData` of the resulting `SingleCellExperiment`. 
-
-```{r, out.width = "400px"}
-cellSCE <- cytomapper::measureObjects(masks, images, img_id = "imageID")
-```
-
-
-
 ## Methods of watershedding
-The user may specify how watershedding is to be performed. The default is `watershed = "combine"` which multiplies this distance map by the raw nuclei marker signal, thus incorporating some information as to the location of the nuclei into the watershedding process. Other options include `watershed = "distance"` which performs watershedding on a distance map of the thresholded nuclei signal and `watershed = "intensity"` which performs watershedding using the intensity of the nuclei marker.
+Watershedding is a method which treats images as topographical maps in order to identify individual objects and the borders between them.
 
+The user may specify how watershedding is to be performed by using the `watershed` arguement in `simpleSeg`.
+
+Method | Description
+----|:----:|:----:
+<span style="font-family: 'Courier New', monospace;">"distance"</span> |  <span style="font-family: 'Courier New', monospace;">Performs watershedding on a distance map of the thresholded nuclei signal. With a pixels distance being defined as the distance from the closest background signal.</span>
+<span style="font-family: 'Courier New', monospace;">"intensity"</span> |  <span style="font-family: 'Courier New', monospace;">Performs watershedding using the intensity of the nuclei marker.</span>
+<span style="font-family: 'Courier New', monospace;">"combine"</span> | <span style="font-family: 'Courier New', monospace;">Combines the previous two methods by multiplying the distance map by the nuclei marker intensity.</span>
 
 ## Methods of cell body identification
 The cell body can also be identified in `simpleSeg` using models of varying complexity, specified with the `cellBody` argument.
 
-
-
-### Dilatation
-The default and most basic is dilation `cellBody = "dilate"`. The size of the dilatation in pixels may be specified with the `discDize` argument.
-```{r, out.width = "400px"}
-masks <- simpleSeg::simpleSeg(images,
-                   nucleus = "HH3",
-                   transform = "sqrt",
-                   cellBody = "dilate",
-                   discSize = 3)
-display(colorLabels(masks[[1]]))
-
-segmented <- paintObjects(masks[[1]], imageRGB, col='#ffffff')
-display(segmented)
-```
-
-
-### Disc Model
-`cellBody = "diskModel` uses all the markers to predict the presence of dilated 'discs' around the nuclei. The model therefore learns which markers are typically present in the cell cytoplasm and generates a mask based on this.
-```{r, out.width = "400px"}
-masks <- simpleSeg::simpleSeg(images,
-                   nucleus = "HH3",
-                   transform = "sqrt",
-                   cellBody = "discModel")
-display(colorLabels(masks[[1]]))
-
-segmented <- paintObjects(masks[[1]], imageRGB, col='#ffffff')
-display(segmented)
-```
-
-
-
-### Marker model
-Finally the user may specify one or multiple dedicated cytoplasm markers to predict the cytoplasm. This can be done using `cellBody = [marker name/index]` as below.
-```{r, out.width = "400px"}
-masks <- simpleSeg::simpleSeg(images,
-                   nucleus = "HH3",
-                   transform = "sqrt",
-                   cellBody = "PanKRT")
-display(colorLabels(masks[[1]]))
-
-segmented <- paintObjects(masks[[1]], imageRGB, col='#ffffff')
-display(segmented)
-
-```
+Method | Description
+----|:----:|:----:
+<span style="font-family: 'Courier New', monospace;">"dilation"</span> |  <span style="font-family: 'Courier New', monospace;">Dilates the nuclei by an amount defined by the user. The size of the dilatation in pixels may be specified with the `discDize` argument.</span>
+<span style="font-family: 'Courier New', monospace;">"discModel"</span> | <span style="font-family: 'Courier New', monospace;">Uses all the markers to predict the presence of dilated 'discs' around the nuclei. The model therefore learns which markers are typically present in the cell cytoplasm and generates a mask based on this.</span>
+<span style="font-family: 'Courier New', monospace;">"marker"</span> | <span style="font-family: 'Courier New', monospace;">The user may specify one or multiple dedicated cytoplasm markers to predict the cytoplasm. This can be done using `cellBody = "marker name"/"index"`</span>
+<span style="font-family: 'Courier New', monospace;">"None"</span> |  <span style="font-family: 'Courier New', monospace;">The nuclei mask is returned directly</span>
 
 
 # Parallel Processing
@@ -202,9 +159,26 @@ masks <- simpleSeg::simpleSeg(images,
 ```
 
 
+## Summarise cell features.
+
+In order to characterise the phenotypes of each of the segmented cells, `measureObjects` from `cytomapper` will calculate the average intensity of each channel within each cell as well as a few morphological features. The channel intensities will be stored in the `counts assay` in a `SingleCellExperiment`. Information on the spatial location of each cell is stored in `colData` in the `m.cx` and `m.cy` columns. In addition to this, it will propogate the information we have store in the `mcols` of our `CytoImageList` in the `colData` of the resulting `SingleCellExperiment`. 
+
+```{r, out.width = "400px"}
+cellSCE <- cytomapper::measureObjects(masks, images, img_id = "imageID")
+```
+
 # Normalizing cells
 
-Once cellular features have been extracted into a SingleCellExperement or dataframe, these features may then be normalized using the `normalizeCells`function. any number of Transformations: `asinh`, `sqrt`. and Normalization methods `mean`(dividing the marker intensities by their mean), `minMax` (subtracts the minimum value and scales markers between 0 and 1), `trim99` (sets the highest 1% of values to the value of the 99th percentile), `PC1` (removes the 1st principle component) can be performed with one call of the function, in the order specified by the user.
+Once cellular features have been extracted into a SingleCellExperement or dataframe, these features may then be normalized using the `normalizeCells`function. any number of Transformations: `asinh`, `sqrt`. and Normalization methods
+
+`mean`(Divides the marker cellular marker intensities by their mean), `minMax` (Subtracts the minimum value and scales markers between 0 and 1.), `trim99` (Sets the highest 1% of values to the value of the 99th percentile.), `PC1` (Removes the 1st principle component) can be performed with one call of the function, in the order specified by the user.
+
+Method | Description
+----|:----:|:----:
+<span style="font-family: 'Courier New', monospace;">"mean"</span> |  <span style="font-family: 'Courier New', monospace;">Divides the marker cellular marker intensities by their mean.</span>
+<span style="font-family: 'Courier New', monospace;">"minMax"</span> | <span style="font-family: 'Courier New', monospace;">Subtracts the minimum value and scales markers between 0 and 1.</span>
+<span style="font-family: 'Courier New', monospace;">"trim99"</span> | <span style="font-family: 'Courier New', monospace;">Sets the highest 1% of values to the value of the 99th percentile.`</span>
+<span style="font-family: 'Courier New', monospace;">"PC1"</span> |  <span style="font-family: 'Courier New', monospace;">Removes the 1st principle component) can be performed with one call of the function, in the order specified by the user.</span>
 
 ```{r}
 # Transform and normalise the marker expression of each cell type.
@@ -263,8 +237,6 @@ sessionInfo()
 
 <!-- ## Tissue mask -->
 <!-- When the entirety of a circular tissue sample is encompassed within an image, the user may with to isolate this circular area, and remove background noise from the remainder of the image. This process is facilitated using the `tissueMask` parameter in `transforms`, which, when selected creates a mask of the tissue within the image. Specified tissue channels can be specified in the `tissueIndex` parameter, by default all channels are used. -->
-```{r}
-cells.normalized <- normalizeCells(cells = pancreasSCE, markers = c('CD99', 'PIN', 'CD8a', 'CDH'), assayIn = 'counts', assayOut = 'normCounts', imageID = 'ImageNb', transformation = 'asinh', method = 'trim99')
-```
+
 
 

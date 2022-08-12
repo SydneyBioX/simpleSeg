@@ -13,11 +13,14 @@
 #'
 #' @examples
 #' 
+#' library(cytomapper)
 #' data("pancreasSCE")
-#' cells.normalized <- normalizeCells(cells = pancreasSCE, markers = c('CD99', 'PIN', 'CD8a', 'CDH'), assayIn = 'counts', assayOut = 'normCounts', imageID = 'ImageNb', transformation = 'asinh', method = 'trim99')
+#' cells.normalized <- normalizeCells(cells = pancreasSCE, markers = c('CD99', 'PIN', 'CD8a', 'CDH'),
+#'  assayIn = 'counts', assayOut = 'normCounts', imageID = 'ImageNb', transformation = 'asinh', method = 'trim99')
 #'
 #' @export normalizeCells
 #' @rdname normalizeCells
+#' @importFrom SummarizedExperiment assay colData assay<-
 #' 
 #'
 normalizeCells <- function(cells,
