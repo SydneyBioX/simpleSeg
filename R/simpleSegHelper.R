@@ -40,7 +40,7 @@ nucSeg <- function(image,
   nuc <- .prepNucSignal(image, nucleusIndex, smooth)
   
 
-  if (is.null(transform) == FALSE) nuc <- .Transform(nuc, transform)
+  if (is.null(transform) == FALSE) nuc <- .Transform(nuc, transform, isNuc = TRUE)
   
   # Segment Nuclei
   nth <-
@@ -212,25 +212,51 @@ nucSegParallel <- function(image,
   # tolerance
 }
 
-.Transform <- function(nuc, transform) {
+
+
+.Transform <- function(image, transform, isNuc) {
   
-  for (i in seq_along(transform)){
-    nuc <- switch(transform[i],
-                  "norm99" = .norm99(nuc),
-                  "asinh" = asinh(nuc),
-                  "maxThresh" = nuc / max(nuc, na.rm = TRUE),
-                  "sqrt" = sqrt(nuc),
-                  "tissueMask" = nuc
-    )
+  if(isNuc){
+    for (i in seq_along(transform)){
+      image <- switch(transform[i],
+                    "norm99" = .norm99(image),
+                    "asinh" = asinh(image),
+                    "maxThresh" = image / max(image, na.rm = TRUE),
+                    "sqrt" = sqrt(image),
+                    "tissueMask" = image
+      )
+    }
+    
+    return(image)
   }
-  
-  return(nuc)
+ else{
+   for (i in seq_along(transform)){
+     image <- switch(transform[i],
+                   "norm99" = .norm99(image),
+                   "asinh" = asinh(image),
+                   "maxThresh" = .maxThresh(image),
+                   "sqrt" = sqrt(image),
+                   "tissueMask" = image
+     )
+   }
+   
+   return(image)
+ }
 }
 
 .norm99 <- function(nuc){
   nuc[nuc > quantile(nuc, 0.99, na.rm = TRUE)] <- quantile(nuc, 0.99, na.rm = TRUE)
   return(nuc)
 }
+
+.maxThresh <- function(image){
+  for (i in 1:dim(image)[3]) {
+    if(max(image[, , i]) > 0)
+    image[, , i] <- image[, , i] / max(image[, , i])
+  }
+  return(image)
+}
+
 
 
 ## disc model ##
@@ -240,7 +266,7 @@ CytSeg <- function(nmask,
                    sizeSelection = 5,
                    smooth = 1,
                    discSize = 3,
-                   normalize = c("maxThresh", "asinh")) {
+                   transform = NULL) {
   kern <- EBImage::makeBrush(discSize, shape = "disc")
   
   cell <- EBImage::dilate(nmask, kern)
@@ -249,28 +275,7 @@ CytSeg <- function(nmask,
   disk <- cell - nmask > 0
   
   # normalization
-  image1 <- image
-  test <- NULL
-  
-  if ("maxThresh" %in% normalize) {
-    for (i in 1:dim(image)[3]) {
-      image[, , i] <- image[, , i] / max(image[, , i])
-    }
-  }
-  if ("sqrt" %in% normalize) {
-    image <- sqrt(image)
-  }
-  
-  
-  if ("asinh" %in% normalize) {
-    image <- asinh(image)
-  }
-  if (is.null(smooth) ==
-      FALSE) {
-    image <- gblur(image, sigma = smooth)
-  }
-  
-  
+  if (is.null(transform) == FALSE) image <- .Transform(image, transform, isNuc = FALSE)
   
   longImage_disk <- data.frame(apply(asinh(image),
                                      3, as.vector),
@@ -310,7 +315,7 @@ cytSegParallel <- function(nmask,
                            sizeSelection = 5,
                            smooth = 1,
                            discSize = 3,
-                           normalize = c("maxThresh", "asinh"),
+                           transform = NULL,
                            BPPARAM = BiocParallel::SerialParam()) {
   test.masks.cyt <- BiocParallel::bpmapply(
     CytSeg,
@@ -320,7 +325,7 @@ cytSegParallel <- function(nmask,
       sizeSelection = sizeSelection,
       smooth = smooth,
       discSize = discSize,
-      normalize = normalize
+      transform = transform
     ),
     BPPARAM = BPPARAM
   )
@@ -334,24 +339,13 @@ CytSeg2 <- function(nmask,
                     channel = 2,
                     sizeSelection = 5,
                     smooth = 1,
-                    normalize = c("maxThresh", "asinh")) {
+                    transform = c("maxThresh", "asinh")) {
  
   
   cytpred <- EBImage::Image(apply(image[, , channel], c(1, 2),
                   mean))
   
-  
-  if ("maxThresh" %in% normalize) {
-    cytpred <- cytpred / max(cytpred)
-  }
-  
-  
-  if ("asinh" %in% normalize) {
-    cytpred <- asinh(cytpred)
-  }
-  if ("sqrt" %in% normalize) {
-    cytpred <- sqrt(cytpred)
-  }
+  if (is.null(transform) == FALSE) image <- .Transform(image, transform, isNuc = FALSE)
   
   
   cytpredsmooth <- EBImage::gblur(cytpred, sigma = smooth)
@@ -391,7 +385,7 @@ cytSeg2Parallel <- function(nmask,
                             channel = 2,
                             sizeSelection = 5,
                             smooth = 1,
-                            normalize = c("maxThresh", "asinh"),
+                            transform = c("maxThresh", "asinh"),
                             BPPARAM = BiocParallel::SerialParam()) {
   test.masks.cyt <- BiocParallel::bpmapply(
     CytSeg2,
@@ -401,7 +395,7 @@ cytSeg2Parallel <- function(nmask,
       channel = channel,
       sizeSelection = sizeSelection,
       smooth = smooth,
-      normalize = normalize
+      transform = transform
     ),
     BPPARAM = BPPARAM
   )

@@ -103,7 +103,7 @@ simpleSeg <- function(image,
       sizeSelection = sizeSelection,
       smooth = smooth,
       discSize = discSize,
-      normalize = transform,
+      transform = transform,
       BPPARAM = BPPARAM
     )
     #Converting from a tiff stack to individual images
@@ -133,7 +133,7 @@ simpleSeg <- function(image,
       channel = cellBody,
       sizeSelection = sizeSelection,
       smooth = smooth,
-      normalize = transform,
+      transform = transform,
       BPPARAM = BPPARAM
     )
     
