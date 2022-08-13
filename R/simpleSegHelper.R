@@ -12,7 +12,7 @@
 ## Segmentation functinos ##
 
 ## NucSeg ##
-#' @importFrom EBImage Image
+#' @importFrom EBImage Image abind
 nucSeg <- function(image,
                    nucleusIndex = 1,
                    sizeSelection = 10,
@@ -170,7 +170,7 @@ nucSegParallel <- function(image,
       EBImage::gblur(x, smooth)
     }, simplify = FALSE)
     
-    image <- abind(image, along = 3)
+    image <- EBImage::abind(image, along = 3)
     
     image.long <- apply(image,3, as.numeric)
     pca <- prcomp(image.long[, apply(image.long, 2, sd)>0])
