@@ -41,27 +41,20 @@ simpleSeg <- function(image,
                       discSize = 3,
                       tissue = NULL,
                       cores = 1) {
+  
   imageClass <- class(image)
+  
   if (!imageClass %in% c("list", "CytoImageList")) {
     image <- list(image)
     names(image) <- "image"
   }
-  # do nmask (if cellBody is null return nuc mask)
-  
-  #if (!(cellBody %in% c("none", "dilate", "discModel"))) {
-  #  if (is.numeric(cellBody) ==
-  #      FALSE) {
-  #    stop(
-  #      "cellBody must be one of the following: 'none', 'dilate', 'discModel' or the index of a cytoplasm marker channel"
-  #    )
-  #  }
-  #}
+
   wholeCell <- FALSE
   if (cellBody == "dilate") {
     wholeCell <- TRUE
   }
   
-  x = runif(1)
+  x <- run1)
   
   BPPARAM <- generateBPParam(cores)
   
@@ -85,13 +78,18 @@ simpleSeg <- function(image,
     nmask <- sapply(nmask, EBImage::Image, simplify = FALSE)
     cyto.nmask <- cytomapper::CytoImageList(nmask)
     
-    if (is.null(names(cyto.nmask))){
+    if (is.null(names(cyto.nmask))) {
       names(cyto.nmask) <- c(seq_along(cyto.nmask))
     }
     
-    if(is(image, "CytoImageList")) mcols(cyto.nmask) <- mcols(image)
+    if (is(image, "CytoImageList")) {
+      mcols(cyto.nmask) <- mcols(image)
+    }
+    
     S4Vectors::mcols(cyto.nmask)$imageID <- names(image)
+    
     objectNum <- as.list(vapply(cyto.nmask, max, numeric(1)))
+    
     mcols(cyto.nmask)$objectNum <- objectNum
     return(cyto.nmask)
   }
@@ -106,8 +104,10 @@ simpleSeg <- function(image,
       transform = transform,
       BPPARAM = BPPARAM
     )
+    
     #Converting from a tiff stack to individual images
     cellList <- NULL 
+    
     for (i in seq_along(cells[1,1,])){ 
       cellList[[i]] <-as.Image(cells[,,i]) 
     }
@@ -118,11 +118,15 @@ simpleSeg <- function(image,
       names(image) <- c(seq_along(image))
     }
     
-    if(is(image, "CytoImageList")) mcols(cyto.mask) <- mcols(image)
-    S4Vectors::mcols(cyto.mask)$imageID <- names(image)
-    objectNum <- as.list(vapply(cyto.mask, max, numeric(1)))
-    mcols(cyto.mask)$objectNum <- objectNum
+    if (is(image, "CytoImageList")) {
+      mcols(cyto.mask) <- mcols(image)
+    }
     
+    S4Vectors::mcols(cyto.mask)$imageID <- names(image)
+    
+    objectNum <- as.list(vapply(cyto.mask, max, numeric(1)))
+    
+    mcols(cyto.mask)$objectNum <- objectNum
     return(cyto.mask)
   }
   
@@ -139,9 +143,9 @@ simpleSeg <- function(image,
     
     #Converting from a tiff stack to individual images
     cellList <- NULL 
-    for (i in seq_along(cells[1,1,])){ 
+    for (i in seq_along(cells[1,1,])) { 
       cellList[[i]] <-as.Image(cells[,,i]) 
-      }
+    }
     
     cyto.mask <- cytomapper::CytoImageList(cellList)
     
@@ -149,11 +153,16 @@ simpleSeg <- function(image,
       names(image) <- c(seq_along(image))
     }
     
-    if(is(image, "CytoImageList")) mcols(cyto.mask) <- mcols(image)
+    if (is(image, "CytoImageList")) {
+      mcols(cyto.mask) <- mcols(image)
+    }
+    
     S4Vectors::mcols(cyto.mask)$imageID <- names(image)
     
     objectNum <- as.list(vapply(cyto.mask, max, numeric(1)))
+    
     mcols(cyto.mask)$objectNum <- objectNum
     return(cyto.mask)
   }
 }
+
