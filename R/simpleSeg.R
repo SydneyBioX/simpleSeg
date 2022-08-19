@@ -40,7 +40,7 @@ simpleSeg <- function(image,
                       ext = 1,
                       discSize = 3,
                       tissue = NULL,
-                      cores = 1) {
+                      cores = 1){
   imageClass <- class(image)
   if (!imageClass %in% c("list", "CytoImageList")) {
     image <- list(image)
@@ -108,8 +108,13 @@ simpleSeg <- function(image,
     )
     #Converting from a tiff stack to individual images
     cellList <- NULL 
-    for (i in seq_along(cells[1,1,])){ 
-      cellList[[i]] <-as.Image(cells[,,i]) 
+    if (is.null(dim(cells))){
+      cellList <- cells
+    }
+    else{
+      for (i in 1:length((cells[1,1,]))){ 
+        cellList[[i]] <-as.Image(cells[,,i]) 
+      }
     }
     
     cyto.mask <- cytomapper::CytoImageList(cellList)
@@ -139,10 +144,14 @@ simpleSeg <- function(image,
     
     #Converting from a tiff stack to individual images
     cellList <- NULL 
-    for (i in seq_along(cells[1,1,])){ 
-      cellList[[i]] <-as.Image(cells[,,i]) 
+    if (is.null(dim(cells))){
+      cellList <- cells
+    }
+    else{
+      for (i in 1:length((cells[1,1,]))){ 
+        cellList[[i]] <-as.Image(cells[,,i]) 
       }
-    
+    }
     cyto.mask <- cytomapper::CytoImageList(cellList)
     
     if (is.null(names(image))){
