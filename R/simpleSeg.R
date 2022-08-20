@@ -54,7 +54,7 @@ simpleSeg <- function(image,
     wholeCell <- TRUE
   }
   
-  x <- run1)
+  x <- runif(1)
   
   BPPARAM <- generateBPParam(cores)
   
@@ -108,19 +108,19 @@ simpleSeg <- function(image,
     #Converting from a tiff stack to individual images
     cellList <- NULL 
     
-    for (i in seq_along(cells[1,1,])){ 
+    for (i in seq_along(cells[1,1,])) { 
       cellList[[i]] <-as.Image(cells[,,i]) 
     }
     
     cyto.mask <- cytomapper::CytoImageList(cellList)
     
-    if (is.null(names(image))){
+    if (is.null(names(image))) {
       names(image) <- c(seq_along(image))
-    }
+      }
     
     if (is(image, "CytoImageList")) {
       mcols(cyto.mask) <- mcols(image)
-    }
+      }
     
     S4Vectors::mcols(cyto.mask)$imageID <- names(image)
     
