@@ -30,17 +30,17 @@
 #' @importFrom stats prcomp quantile lm
 #' @importFrom S4Vectors mcols mcols<-
 simpleSeg <- function(image,
-                      nucleus = "PCA",
-                      cellBody = "dilate",
-                      sizeSelection = 10,
-                      smooth = 1,
-                      transform = NULL,
-                      watershed = "combine",
-                      tolerance = NULL,
-                      ext = 1,
-                      discSize = 3,
-                      tissue = NULL,
-                      cores = 1) {
+                      nucleus="PCA",
+                      cellBody="dilate",
+                      sizeSelection=10,
+                      smooth=1,
+                      transform=NULL,
+                      watershed="combine",
+                      tolerance=NULL,
+                      ext=1,
+                      discSize=3,
+                      tissue=NULL,
+                      cores=1) {
   
   imageClass <- class(image)
   
@@ -58,24 +58,22 @@ simpleSeg <- function(image,
   
   BPPARAM <- generateBPParam(cores)
   
-  nmask <- nucSegParallel(
-    image,
-    nucleusIndex = nucleus,
-    sizeSelection = sizeSelection,
-    smooth = smooth,
-    watershed = watershed,
-    tolerance = tolerance,
-    ext = ext,
-    wholeCell = wholeCell,
-    discSize = discSize,
-    transform = transform,
-    tissueIndex = tissue,
-    BPPARAM = BPPARAM
-  )
+  nmask <- nucSegParallel(image,
+                          nucleusIndex=nucleus,
+                          sizeSelection=sizeSelection,
+                          smooth=smooth,
+                          watershed=watershed,
+                          tolerance=tolerance,
+                          ext=ext,
+                          wholeCell=wholeCell,
+                          discSize=discSize,
+                          transform=transform,
+                          tissueIndex=tissue,
+                          BPPARAM=BPPARAM)
   
   # if dilate or none
   if (cellBody %in% c("dilate", "none")) {
-    nmask <- sapply(nmask, EBImage::Image, simplify = FALSE)
+    nmask <- sapply(nmask, EBImage::Image, simplify=FALSE)
     cyto.nmask <- cytomapper::CytoImageList(nmask)
     
     if (is.null(names(cyto.nmask))) {
@@ -95,15 +93,13 @@ simpleSeg <- function(image,
   }
   
   if (cellBody == "discModel") {
-    cells <- cytSegParallel(
-      nmask,
-      image,
-      sizeSelection = sizeSelection,
-      smooth = smooth,
-      discSize = discSize,
-      transform = transform,
-      BPPARAM = BPPARAM
-    )
+    cells <- cytSegParallel(nmask,
+                            image,
+                            sizeSelection=sizeSelection,
+                            smooth=smooth,
+                            discSize=discSize,
+                            transform=transform,
+                            BPPARAM=BPPARAM)
     
     #Converting from a tiff stack to individual images
     cellList <- NULL 
@@ -131,15 +127,13 @@ simpleSeg <- function(image,
   }
   
   if (any(cellBody %in% dimnames(image[[1]])[[3]])) {
-    cells <- cytSeg2Parallel(
-      nmask,
-      image,
-      channel = cellBody,
-      sizeSelection = sizeSelection,
-      smooth = smooth,
-      transform = transform,
-      BPPARAM = BPPARAM
-    )
+    cells <- cytSeg2Parallel(nmask,
+                             image,
+                             channel=cellBody,
+                             sizeSelection=sizeSelection,
+                             smooth=smooth,
+                             transform=transform,
+                             BPPARAM=BPPARAM)
     
     #Converting from a tiff stack to individual images
     cellList <- NULL 
