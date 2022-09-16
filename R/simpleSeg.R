@@ -30,139 +30,133 @@
 #' @importFrom stats prcomp quantile lm
 #' @importFrom S4Vectors mcols mcols<-
 simpleSeg <- function(image,
-                      nucleus = "PCA",
-                      cellBody = "dilate",
-                      sizeSelection = 10,
-                      smooth = 1,
-                      transform = NULL,
-                      watershed = "combine",
-                      tolerance = NULL,
-                      ext = 1,
-                      discSize = 3,
-                      tissue = NULL,
-                      cores = 1){
+                      nucleus="PCA",
+                      cellBody="dilate",
+                      sizeSelection=10,
+                      smooth=1,
+                      transform=NULL,
+                      watershed="combine",
+                      tolerance=NULL,
+                      ext=1,
+                      discSize=3,
+                      tissue=NULL,
+                      cores=1) {
+  
   imageClass <- class(image)
+  
   if (!imageClass %in% c("list", "CytoImageList")) {
     image <- list(image)
     names(image) <- "image"
   }
-  # do nmask (if cellBody is null return nuc mask)
-  
-  #if (!(cellBody %in% c("none", "dilate", "discModel"))) {
-  #  if (is.numeric(cellBody) ==
-  #      FALSE) {
-  #    stop(
-  #      "cellBody must be one of the following: 'none', 'dilate', 'discModel' or the index of a cytoplasm marker channel"
-  #    )
-  #  }
-  #}
+
   wholeCell <- FALSE
   if (cellBody == "dilate") {
     wholeCell <- TRUE
   }
   
-  x = runif(1)
+  x <- runif(1)
   
   BPPARAM <- generateBPParam(cores)
   
-  nmask <- nucSegParallel(
-    image,
-    nucleusIndex = nucleus,
-    sizeSelection = sizeSelection,
-    smooth = smooth,
-    watershed = watershed,
-    tolerance = tolerance,
-    ext = ext,
-    wholeCell = wholeCell,
-    discSize = discSize,
-    transform = transform,
-    tissueIndex = tissue,
-    BPPARAM = BPPARAM
-  )
+  nmask <- nucSegParallel(image,
+                          nucleusIndex=nucleus,
+                          sizeSelection=sizeSelection,
+                          smooth=smooth,
+                          watershed=watershed,
+                          tolerance=tolerance,
+                          ext=ext,
+                          wholeCell=wholeCell,
+                          discSize=discSize,
+                          transform=transform,
+                          tissueIndex=tissue,
+                          BPPARAM=BPPARAM)
   
   # if dilate or none
   if (cellBody %in% c("dilate", "none")) {
-    nmask <- sapply(nmask, EBImage::Image, simplify = FALSE)
+    nmask <- sapply(nmask, EBImage::Image, simplify=FALSE)
     cyto.nmask <- cytomapper::CytoImageList(nmask)
     
-    if (is.null(names(cyto.nmask))){
+    if (is.null(names(cyto.nmask))) {
       names(cyto.nmask) <- c(seq_along(cyto.nmask))
     }
     
-    if(is(image, "CytoImageList")) mcols(cyto.nmask) <- mcols(image)
+    if (is(image, "CytoImageList")) {
+      mcols(cyto.nmask) <- mcols(image)
+    }
+    
     S4Vectors::mcols(cyto.nmask)$imageID <- names(image)
+    
     objectNum <- as.list(vapply(cyto.nmask, max, numeric(1)))
+    
     mcols(cyto.nmask)$objectNum <- objectNum
     return(cyto.nmask)
   }
   
   if (cellBody == "discModel") {
-    cells <- cytSegParallel(
-      nmask,
-      image,
-      sizeSelection = sizeSelection,
-      smooth = smooth,
-      discSize = discSize,
-      transform = transform,
-      BPPARAM = BPPARAM
-    )
+    cells <- cytSegParallel(nmask,
+                            image,
+                            sizeSelection=sizeSelection,
+                            smooth=smooth,
+                            discSize=discSize,
+                            transform=transform,
+                            BPPARAM=BPPARAM)
+    
     #Converting from a tiff stack to individual images
     cellList <- NULL 
-    if (is.null(dim(cells))){
-      cellList <- cells
-    }
-    else{
-      for (i in 1:length((cells[1,1,]))){ 
-        cellList[[i]] <-as.Image(cells[,,i]) 
-      }
+    
+    for (i in seq_along(cells[1,1,])) { 
+      cellList[[i]] <-as.Image(cells[,,i]) 
     }
     
     cyto.mask <- cytomapper::CytoImageList(cellList)
     
-    if (is.null(names(image))){
+    if (is.null(names(image))) {
       names(image) <- c(seq_along(image))
-    }
+      }
     
-    if(is(image, "CytoImageList")) mcols(cyto.mask) <- mcols(image)
+    if (is(image, "CytoImageList")) {
+      mcols(cyto.mask) <- mcols(image)
+      }
+    
     S4Vectors::mcols(cyto.mask)$imageID <- names(image)
-    objectNum <- as.list(vapply(cyto.mask, max, numeric(1)))
-    mcols(cyto.mask)$objectNum <- objectNum
     
+    objectNum <- as.list(vapply(cyto.mask, max, numeric(1)))
+    
+    mcols(cyto.mask)$objectNum <- objectNum
     return(cyto.mask)
   }
   
   if (any(cellBody %in% dimnames(image[[1]])[[3]])) {
-    cells <- cytSeg2Parallel(
-      nmask,
-      image,
-      channel = cellBody,
-      sizeSelection = sizeSelection,
-      smooth = smooth,
-      transform = transform,
-      BPPARAM = BPPARAM
-    )
+    cells <- cytSeg2Parallel(nmask,
+                             image,
+                             channel=cellBody,
+                             sizeSelection=sizeSelection,
+                             smooth=smooth,
+                             transform=transform,
+                             BPPARAM=BPPARAM)
     
     #Converting from a tiff stack to individual images
     cellList <- NULL 
-    if (is.null(dim(cells))){
-      cellList <- cells
+    for (i in seq_along(cells[1,1,])) { 
+      cellList[[i]] <-as.Image(cells[,,i]) 
     }
-    else{
-      for (i in 1:length((cells[1,1,]))){ 
-        cellList[[i]] <-as.Image(cells[,,i]) 
-      }
-    }
+    
     cyto.mask <- cytomapper::CytoImageList(cellList)
     
     if (is.null(names(image))){
       names(image) <- c(seq_along(image))
     }
     
-    if(is(image, "CytoImageList")) mcols(cyto.mask) <- mcols(image)
+    if (is(image, "CytoImageList")) {
+      mcols(cyto.mask) <- mcols(image)
+    }
+    
     S4Vectors::mcols(cyto.mask)$imageID <- names(image)
     
     objectNum <- as.list(vapply(cyto.mask, max, numeric(1)))
+    
     mcols(cyto.mask)$objectNum <- objectNum
     return(cyto.mask)
   }
 }
+

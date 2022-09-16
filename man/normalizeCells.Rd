@@ -2,7 +2,7 @@
 % Please edit documentation in R/normalizeCells.R
 \name{normalizeCells}
 \alias{normalizeCells}
-\title{Normalizes and transforms cell data in preparation for clustering (accepts dataframes, singleCellExperiments and SpatialExperiments)}
+\title{Normalizes and transforms cell data in preparation for clustering (accepts dataframe, SingleCellExperiment and SpatialExperiment)}
 \usage{
 normalizeCells(
   cells,
@@ -16,15 +16,15 @@ normalizeCells(
 )
 }
 \arguments{
-\item{cells}{A Dataframe of singlecellexperement or spatialexperiment containing cells and features to be normalized/transformed}
+\item{cells}{A Dataframe of SingleCellExperiment or SpatialExperiment containing cells and features to be normalized/transformed}
 
 \item{markers}{A list containing the names of cell markers which will be normalized/transformed}
 
-\item{assayIn}{If input is a SCE or SE with multiple assays, specify the assay to be normalized/transformed}
+\item{assayIn}{If input is a SingleCellExperiment or SpatialExperiment with multiple assays, specify the assay to be normalized/transformed}
 
-\item{assayOut}{If input is a SCE or SE, the new of the normalized data.}
+\item{assayOut}{If input is a SingleCellExperiment or SpatialExperiment, the new of the normalized data.}
 
-\item{imageID}{If input is a SCE or SE, this is the name of the image ID variable in order to stratify cells correctly}
+\item{imageID}{If input is a SingleCellExperiment or SpatialExperiment, this is the name of the image ID variable in order to stratify cells correctly}
 
 \item{transformation}{The transformation/s to be performed, default is NULL, accepted values: 'asinh' and 'sqrt'}
 
@@ -36,7 +36,7 @@ normalizeCells(
 returns a dataframe with individual cells as rows and features as columns
 }
 \description{
-Normalizes and transforms cell data in preparation for clustering (accepts dataframes, singleCellExperiments and SpatialExperiments)
+Normalizes and transforms cell data in preparation for clustering (accepts dataframe, SingleCellExperiment and SpatialExperiment)
 }
 \examples{
 
