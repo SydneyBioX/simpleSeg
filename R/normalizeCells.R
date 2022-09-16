@@ -1,10 +1,10 @@
-#' Normalizes and transforms cell data in preparation for clustering (accepts dataframes, singleCellExperiments and SpatialExperiments)
+#' Normalizes and transforms cell data in preparation for clustering (accepts dataframe, SingleCellExperiment and SpatialExperiment)
 #'
-#' @param cells A Dataframe of singlecellexperement or spatialexperiment containing cells and features to be normalized/transformed
+#' @param cells A Dataframe of SingleCellExperiment or SpatialExperiment containing cells and features to be normalized/transformed
 #' @param markers A list containing the names of cell markers which will be normalized/transformed
-#' @param assayIn If input is a SCE or SE with multiple assays, specify the assay to be normalized/transformed
-#' @param assayOut If input is a SCE or SE, the new of the normalized data.
-#' @param imageID If input is a SCE or SE, this is the name of the image ID variable in order to stratify cells correctly
+#' @param assayIn If input is a SingleCellExperiment or SpatialExperiment with multiple assays, specify the assay to be normalized/transformed
+#' @param assayOut If input is a SingleCellExperiment or SpatialExperiment, the new of the normalized data.
+#' @param imageID If input is a SingleCellExperiment or SpatialExperiment, this is the name of the image ID variable in order to stratify cells correctly
 #' @param transformation The transformation/s to be performed, default is NULL, accepted values: 'asinh' and 'sqrt'
 #' @param method The normalization method/s to be performed, default is NULL, accepted values: 'mean', 'minMax', 'trim99', 'PC1'
 #' @param cores The number or cores for parallel processing
