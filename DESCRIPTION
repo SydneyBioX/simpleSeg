@@ -1,7 +1,7 @@
 Package: simpleSeg
 Type: Package
 Title: A package to perform simple cell segmentation
-Version: 0.99.0
+Version: 0.99.1
 Date: 2022-04-21
 Authors@R: c(person("Nicolas", "Canete", email = "nicolas.canete@sydney.edu.au",
     role = c("aut")),
