@@ -21,6 +21,8 @@
 #' @export normalizeCells
 #' @rdname normalizeCells
 #' @importFrom SummarizedExperiment assay colData assay<-
+#' @importFrom methods is
+#' @importFrom stats coef cor median resid runif sd
 normalizeCells <- function(cells,
                            markers=NULL,
                            assayIn=NULL,

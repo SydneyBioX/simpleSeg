@@ -3,6 +3,8 @@
 #' @importFrom grDevices chull
 #' @importFrom spatstat.geom owin
 #' @importFrom spatstat.geom as.mask
+#' @importFrom methods is
+#' @importFrom stats coef cor median resid runif sd
 
 calcTissueMask <- function(image, tissue_index, size_selection=10) {
     

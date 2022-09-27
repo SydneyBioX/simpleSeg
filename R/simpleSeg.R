@@ -27,8 +27,9 @@
 #' @importFrom EBImage gblur otsu bwlabel makeBrush filter2 watershed dilate distmap propagate Image as.Image
 #' @importFrom terra predict
 #' @import cytomapper
-#' @importFrom stats prcomp quantile lm
+#' @importFrom stats prcomp quantile lm coef cor median resid runif sd
 #' @importFrom S4Vectors mcols mcols<-
+#' @importFrom methods is
 simpleSeg <- function(image,
                       nucleus="PCA",
                       cellBody="dilate",

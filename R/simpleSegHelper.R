@@ -1,4 +1,6 @@
 #' @importFrom EBImage Image abind
+#' @importFrom methods is
+#' @importFrom stats coef cor median resid runif sd
 nucSeg <- function(image,
                    nucleusIndex = 1,
                    sizeSelection = 10,
