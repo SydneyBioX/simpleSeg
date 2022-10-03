@@ -26,7 +26,8 @@ Imports:
 Suggests: 
     BiocStyle,
     testthat (>= 3.0.0),
-    knitr
+    knitr,
+    ggplot2
 Description: simpleSeg provides functionality for user friendly, watershed based segmentation on multiplexed cellular images in R. simpleSeg can also be used for the normalization of single cell data obtained from multiple images.
 License: GPL-3
 RoxygenNote: 7.2.1
