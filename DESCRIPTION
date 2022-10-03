@@ -31,3 +31,5 @@ Description: simpleSeg provides functionality for user friendly, watershed based
 License: GPL-3
 RoxygenNote: 7.2.1
 Config/testthat/edition: 3
+BugReports: https://github.com/SydneyBioX/simpleSeg/issues
+URL: https://github.com/SydneyBioX/simpleSeg
