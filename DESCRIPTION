@@ -12,8 +12,17 @@ Authors@R: c(person("Nicolas", "Canete", email = "nicolas.canete@sydney.edu.au",
 VignetteBuilder: knitr
 Encoding: UTF-8
 biocViews: Classification, Survival, SingleCell, Normalization
-Depends: R (>= 4.1.0)
-Imports: BiocParallel, EBImage, terra, cytomapper, stats, spatstat.geom, S4Vectors, grDevices, SummarizedExperiment
+Imports: 
+    BiocParallel, 
+    EBImage, 
+    terra, 
+    cytomapper, 
+    stats, 
+    spatstat.geom, 
+    S4Vectors, 
+    grDevices, 
+    SummarizedExperiment,
+    methods
 Suggests: 
     BiocStyle,
     testthat (>= 3.0.0),
