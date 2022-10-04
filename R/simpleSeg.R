@@ -57,8 +57,8 @@ simpleSeg <- function(image,
 
   # transform input validation
   if (is.vector(transform)) {
-    if (is.) {
-       selected
+    if (length(transform) == 0) {
+       stop('Transformation list is empty.')
     }
     dummy = TRUE
     for (element in transform) {
