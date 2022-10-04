@@ -44,22 +44,41 @@ simpleSeg <- function(image,
                       cores=1) {
 
   # cellBody input validation
-  if (!(cellBody %in% c('none', 'dilate', 'discModel'))) {
-    stop("Invalid method of cytoplasm identification. Must be 'none', 'dialate' or 'discModel'.")
+  valid_cellBody = c('none', 'dilate', 'discModel')
+  if (!(cellBody %in% valid_cellBody)) {
+    # Throw informative error message.
+    stop(
+      paste0(
+        sprintf("Invalid method of cytoplasm identification: '%s'. Must be ",
+                cellBody),
+        paste(valid_cellBody, collapse = ", "),
+        "."
+      )
+    )
   } 
 
   # transform input validation
-  if (is.null(transform)) {}
-  else if (is.vector(transform)) {
+  valid_tansforms <- c("sqrt", "asinh", "norm99", "maxThresh", "tissueMask")
+  if (is.null(transform)) {
+
+  } else if (is.vector(transform)) {
     dummy <- TRUE
     for (element in transform) {
-       dummy <- (element %in% c("sqrt", "asinh", "norm99", "maxThresh", "tissueMask")) && dummy
-       if (!dummy) {
-        stop(sprintf("Transform list contains invalid transform: '%s'. Choose from 'sqrt', 'asinh', 'norm99', 'maxThresh', 'tissueMask'.", element))
-       }
+      dummy <- (element %in% valid_tansforms) && dummy
+      if (!dummy) {
+        # Throw informative error message.
+        stop(
+          paste0(
+            sprintf("Transform list contains invalid transform: '%s'. ",
+                    element),
+            paste(valid_tansforms, collapse = ", "),
+            "."
+          )
+        )
+      }
     }
   } else {
-    if (!(transform %in%  c("sqrt", "asinh", "norm99", "maxThresh", "tissueMask"))) {
+    if (!(transform %in% c())) {
       stop(sprintf("Invalid transform: '%s'. Choose from 'sqrt', 'asinh', 'norm99', 'maxThresh', 'tissueMask'.", transform))
     }
   }
