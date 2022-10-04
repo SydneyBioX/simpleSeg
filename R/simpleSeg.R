@@ -74,7 +74,7 @@ simpleSeg <- function(image,
   
   # if dilate or none
   if (cellBody %in% c("dilate", "none")) {
-    nmask <- vapply(nmask, EBImage::Image, simplify=FALSE)
+    nmask <- sapply(nmask, EBImage::Image, simplify=FALSE)
     cyto.nmask <- cytomapper::CytoImageList(nmask)
     
     if (is.null(names(cyto.nmask))) {
