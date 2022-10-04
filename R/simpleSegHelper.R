@@ -215,7 +215,7 @@ nucSegParallel <- function(image,
 }
 
 .maxThresh <- function(image) {
-  for (i in 1:dim(image)[3]) {
+  for (i in seq_len(dim(image))[3]) {
     if (max(image[,,i]) > 0)
     image[,,i] <- image[,,i] / max(image[,,i])
   }
