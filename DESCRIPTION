@@ -1,6 +1,7 @@
 Package: simpleSeg
 Type: Package
 Title: A package to perform simple cell segmentation
+Description: The simpleSeg package provides a structured pipeline for creating segmentation masks from multiplexed cellular images in the form of tiff stacks. simpleSeg also facilitates the normalization of cellular features after these features have been extracted from the image, priming cells for classification / clustering. These functions leverage the functionality of the EBImage package on Bioconductor.
 Version: 0.99.1
 Date: 2022-04-21
 Authors@R: c(person("Nicolas", "Canete", email = "nicolas.canete@sydney.edu.au",
@@ -28,7 +29,6 @@ Suggests:
     testthat (>= 3.0.0),
     knitr,
     ggplot2
-Description: The simpleSeg package provides a structured pipeline for creating segmentation masks from multiplexed cellular images in the form of tiff stacks. simpleSeg also facilitates the normalization of cellular features after these features have been extracted from the image, priming cells for classification / clustering. These functions leverage the functionality of the EBImage package on Bioconductor.
 License: GPL-3
 RoxygenNote: 7.2.1
 Config/testthat/edition: 3
