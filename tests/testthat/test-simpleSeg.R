@@ -9,7 +9,12 @@ load_data <- function() {
     names(imageDirs) <- dir(pathToImages, "Point", full.names = FALSE)
 
     # Get files in each directory
-    files <- sapply(imageDirs, list.files, pattern = "tif", full.names = TRUE, simplify = FALSE)
+    files <- lapply(
+        imageDirs,
+        list.files,
+        pattern = "tif",
+        full.names = TRUE
+    )
 
     # Read files with readImage from EBImage
     images <- lapply(files, EBImage::readImage, as.is = TRUE)
