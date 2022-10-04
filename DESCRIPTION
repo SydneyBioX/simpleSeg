@@ -12,11 +12,11 @@ Authors@R: c(person("Nicolas", "Canete", email = "nicolas.canete@sydney.edu.au",
 VignetteBuilder: knitr
 Encoding: UTF-8
 biocViews: Classification, Survival, SingleCell, Normalization
+Depends: cytomapper
 Imports: 
     BiocParallel, 
     EBImage, 
-    terra, 
-    cytomapper, 
+    terra,  
     stats, 
     spatstat.geom, 
     S4Vectors, 
