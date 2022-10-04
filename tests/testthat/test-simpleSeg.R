@@ -1,9 +1,5 @@
-test_that("Test masks are the sames as the saved ones.", {
-    # load saved masks
-    saved_masks <- readRDS("saved_masks.rds")
 
-    # compute masks on example data
-
+load_data <- function() {
     # Get path to image directory
     pathToImages <- system.file("extdata", package = "simpleSeg")
 
@@ -22,6 +18,16 @@ test_that("Test masks are the sames as the saved ones.", {
     images <- cytomapper::CytoImageList(images)
     mcols(images)$imageID <- names(images)
 
+    return(images)
+}
+
+test_that("Test masks are the sames as the saved ones.", {
+    # load saved masks
+    saved_masks <- readRDS("saved_masks.rds")
+
+    # compute masks on example data
+    images <- load_data()
+
     masks <- simpleSeg::simpleSeg(images,
                                  nucleus = "HH3",
                                  transform = "sqrt")
@@ -30,17 +36,35 @@ test_that("Test masks are the sames as the saved ones.", {
 })
 
 test_that("Test if method of cytoplasm identification is valid.", {
-    # load saved masks
-    saved_masks <- readRDS("saved_masks.rds")
+    # load images
+    images <- load_data()
 
-    expect_error(simpleSeg(saved_masks, cellBody='large'))
+    expect_error(simpleSeg(images, 
+                           nucleus = "HH3",
+                           cellBody='large'))
 })
 
 test_that("Test if transform parameter is valid.", {
-    # load saved masks
-    saved_masks <- readRDS("saved_masks.rds")
+    # load images
+    images <- load_data()
 
-    expect_error(simpleSeg(saved_masks, transform = c()))
-    expect_error(simpleSeg(saved_masks, transform = c('sqrt','bad')))
-    expect_error(simpleSeg(saved_masks, transform = 'fake'))
+    # code runs as expected for valid input
+    expect_silent(simpleSeg(images, 
+                            nucleus = "HH3",
+                            transform = 'sqrt'))
+    expect_silent(simpleSeg(images, 
+                            nucleus = "HH3",
+                            transform = c('sqrt','norm99')))
+
+    # error on invalid input
+    expect_error(simpleSeg(images, 
+                           nucleus = "HH3",
+                           transform = c()))
+    expect_error(simpleSeg(images, 
+                           nucleus = "HH3",
+                           transform = c('sqrt','bad')))
+    expect_error(simpleSeg(images, 
+                           nucleus = "HH3",
+                           transform = 'fake'))
+
 })
