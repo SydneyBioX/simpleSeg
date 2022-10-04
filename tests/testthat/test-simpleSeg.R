@@ -35,3 +35,12 @@ test_that("Test if method of cytoplasm identification is valid.", {
 
     expect_error(simpleSeg(saved_masks, cellBody='large'))
 })
+
+test_that("Test if transform parameter is valid.", {
+    # load saved masks
+    saved_masks <- readRDS("saved_masks.rds")
+
+    expect_error(simpleSeg(saved_masks, transform = c()))
+    expect_error(simpleSeg(saved_masks, transform = c('sqrt','bad')))
+    expect_error(simpleSeg(saved_masks, transform = 'fake'))
+})

@@ -55,6 +55,24 @@ simpleSeg <- function(image,
     stop("Invalid method of cytoplasm identification. Must be 'none', 'dialate' or 'discModel'.")
   } 
 
+  # transform input validation
+  if (is.vector(transform)) {
+    if (is.) {
+       selected
+    }
+    dummy = TRUE
+    for (element in transform) {
+       dummy = (element %in% c("sqrt", "asinh", "norm99", "maxThresh", "tissueMask")) && dummy
+       if (!dummy) {
+        stop(sprintf("Transform list contains invalid transform: '%s'. Choose from 'sqrt', 'asinh', 'norm99', 'maxThresh', 'tissueMask'.", element))
+       }
+    }
+  } else {
+    if (!(transform %in%  c("sqrt", "asinh", "norm99", "maxThresh", "tissueMask"))) {
+      stop(sprintf("Invalid transform: '%s'. Choose from 'sqrt', 'asinh', 'norm99', 'maxThresh', 'tissueMask'.", transform))
+    }
+  }
+
   wholeCell <- FALSE
   if (cellBody == "dilate") {
     wholeCell <- TRUE
