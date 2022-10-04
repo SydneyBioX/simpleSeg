@@ -1,16 +1,16 @@
 # helper function to load data for testing.
 load_data <- function() {
     # Get path to image directory
-    pathToImages <- system.file("extdata", package = "simpleSeg")
+    path_to_images <- system.file("extdata", package = "simpleSeg")
 
     # Get directories of images
 
-    imageDirs <- dir(pathToImages, "Point", full.names = TRUE)
-    names(imageDirs) <- dir(pathToImages, "Point", full.names = FALSE)
+    image_dirs <- dir(path_to_images, "Point", full.names = TRUE)
+    names(image_dirs) <- dir(path_to_images, "Point", full.names = FALSE)
 
     # Get files in each directory
     files <- lapply(
-        imageDirs,
+        image_dirs,
         list.files,
         pattern = "tif",
         full.names = TRUE
@@ -26,7 +26,7 @@ load_data <- function() {
     return(images)
 }
 
-# test that simpleSeg is running as expected 
+# test that simpleSeg is running as expected
 test_that("Test masks are the same as the saved ones.", {
     # load saved masks
     saved_masks <- readRDS("saved_masks.rds")
@@ -46,14 +46,11 @@ test_that("Test if cellBody parameter is valid.", {
     # load images
     images <- load_data()
 
-    expect_silent(simpleSeg(images, 
+    expect_silent(simpleSeg(images,
                             nucleus = "HH3",
-                            cellBody='none'))
+                            cellBody = "none"))
 
-    #TODO: Figure out what is wrong with this test.
-    # expect_error(simpleSeg(images, 
-    #                        nucleus = "HH3",
-    #                        cellBody='large'))
+    #TODO: Test expected error for incorrect input.
 })
 
 # test transform parameter
@@ -62,22 +59,22 @@ test_that("Test if transform parameter is valid.", {
     images <- load_data()
 
     # code runs as expected for valid input
-    expect_silent(simpleSeg(images, 
+    expect_silent(simpleSeg(images,
                             nucleus = "HH3",
-                            transform = 'sqrt'))
-    expect_silent(simpleSeg(images, 
+                            transform = "sqrt"))
+    expect_silent(simpleSeg(images,
                             nucleus = "HH3",
-                            transform = c('sqrt','norm99')))
-    expect_silent(simpleSeg(images, 
+                            transform = c("sqrt", "norm99")))
+    expect_silent(simpleSeg(images,
                             nucleus = "HH3",
                             transform = c()))
 
     # error on invalid input
-    expect_error(simpleSeg(images, 
+    expect_error(simpleSeg(images,
                            nucleus = "HH3",
-                           transform = c('sqrt','bad')))
-    expect_error(simpleSeg(images, 
+                           transform = c("sqrt", "bad")))
+    expect_error(simpleSeg(images,
                            nucleus = "HH3",
-                           transform = 'fake'))
+                           transform = "fake"))
 
 })
