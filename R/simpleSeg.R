@@ -1,7 +1,7 @@
 #' Perform simple segmentation of multiplexed cellular images
 #'
 #' @param image An image or list of images or CytoImageList to be read into the function
-#' @param nucleus The marker or list of markers corresponding to the nuclei marker/s. PCA can also be specified in addition to or implace of a marker
+#' @param nucleus The marker or list of markers corresponding to the nuclei marker/s. PCA can also be specified in addition to or im place of a marker
 #' @param cellBody Method of cytoplasm identification. Can be 'none', dilate', 'discModel' or the name of a dedicated cytoplasm marker
 #' @param sizeSelection Minimum pixels for an object to be recognised as a cell and not noise
 #' @param smooth The amount of Gaussian smoothing to be applied to the image/s
@@ -49,6 +49,11 @@ simpleSeg <- function(image,
     image <- list(image)
     names(image) <- "image"
   }
+
+  # cellBody input validation
+  if (!(cellBody %in% c('none', 'dilate', 'discModel'))) {
+    stop("Invalid method of cytoplasm identification. Must be 'none', 'dialate' or 'discModel'.")
+  } 
 
   wholeCell <- FALSE
   if (cellBody == "dilate") {

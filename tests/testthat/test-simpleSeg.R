@@ -28,3 +28,10 @@ test_that("Test masks are the sames as the saved ones.", {
 
     expect_equal(saved_masks, masks)
 })
+
+test_that("Test if method of cytoplasm identification is valid.", {
+    # load saved masks
+    saved_masks <- readRDS("saved_masks.rds")
+
+    expect_error(simpleSeg(saved_masks, cellBody='large'))
+})
