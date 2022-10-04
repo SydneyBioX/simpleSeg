@@ -35,9 +35,13 @@ test_that("Test masks are the sames as the saved ones.", {
     expect_equal(saved_masks, masks)
 })
 
-test_that("Test if method of cytoplasm identification is valid.", {
+test_that("Test if cellBody parameter is valid.", {
     # load images
     images <- load_data()
+
+    expect_silent(simpleSeg(images, 
+                            nucleus = "HH3",
+                            cellBody='none'))
 
     expect_error(simpleSeg(images, 
                            nucleus = "HH3",
@@ -55,11 +59,11 @@ test_that("Test if transform parameter is valid.", {
     expect_silent(simpleSeg(images, 
                             nucleus = "HH3",
                             transform = c('sqrt','norm99')))
+    expect_silent(simpleSeg(images, 
+                            nucleus = "HH3",
+                            transform = c()))
 
     # error on invalid input
-    expect_error(simpleSeg(images, 
-                           nucleus = "HH3",
-                           transform = c()))
     expect_error(simpleSeg(images, 
                            nucleus = "HH3",
                            transform = c('sqrt','bad')))

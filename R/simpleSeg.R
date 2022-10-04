@@ -56,10 +56,8 @@ simpleSeg <- function(image,
   } 
 
   # transform input validation
-  if (is.vector(transform)) {
-    if (length(transform) == 0) {
-       stop('Transformation list is empty.')
-    }
+  if (is.null(transform)) {}
+  else if (is.vector(transform)) {
     dummy = TRUE
     for (element in transform) {
        dummy = (element %in% c("sqrt", "asinh", "norm99", "maxThresh", "tissueMask")) && dummy
