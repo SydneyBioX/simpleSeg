@@ -50,9 +50,11 @@ calcTissueMask <- function(image, tissue_index, size_selection=10) {
                               poly=poly
     )
     
-    tissueMask <- as.matrix(spatstat.geom::as.mask(ow, 
-                                                   xy=list(y=1:nrow(tissue),
-                                                           x=1:ncol(tissue))))  
+    tissueMask <- as.matrix(
+      spatstat.geom::as.mask(ow,
+                             xy=list(y=seq_len(nrow(tissue)),
+                                     x=seq_len(ncol(tissue))))
+)  
     ## this is all the points inside the convex hull
     
     return(tissueMask)
