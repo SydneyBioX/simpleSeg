@@ -166,7 +166,7 @@ Method | Description
 ## Parallel Processing
 `simpleSeg` also supports parallel processing, with the `cores` argument being used to specify how many cores should be used.
 
-```{r}
+```{r, eval=FALSE}
 masks <- simpleSeg::simpleSeg(images,
                               nucleus = "HH3",
                               cores = 5)
