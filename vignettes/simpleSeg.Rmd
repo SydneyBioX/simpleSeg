@@ -42,9 +42,12 @@ library(cytomapper)
 # Installation
 
 ```{r, eval = FALSE}
-# Install the development version from GitHub:
-# install.packages("devtools")
-devtools::install_github("SydneyBioX/simpleSeg")
+# Install the package from Bioconductor
+if (!requireNamespace("BiocManager", quietly = TRUE)) {
+    install.packages("BiocManager")
+}
+
+BiocManager::install("simpleSeg")
 ```
 
 # Overview

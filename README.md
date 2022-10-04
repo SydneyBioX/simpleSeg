@@ -10,6 +10,17 @@ A brief preview of `simpleSeg` can be found [here](https://htmlpreview.github.io
 
 Installation
 --------
+Install the package from Bioconductor.
+
+```r
+if (!requireNamespace("BiocManager", quietly = TRUE)) {
+    install.packages("BiocManager")
+}
+
+BiocManager::install("simpleSeg")
+```
+
+Otherwise, install the development version from Github.
 
 ```r
 # Install the development version from GitHub:
