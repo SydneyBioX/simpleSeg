@@ -42,13 +42,6 @@ simpleSeg <- function(image,
                       discSize=3,
                       tissue=NULL,
                       cores=1) {
-  
-  imageClass <- class(image)
-  
-  if (!imageClass %in% c("list", "CytoImageList")) {
-    image <- list(image)
-    names(image) <- "image"
-  }
 
   # cellBody input validation
   if (!(cellBody %in% c('none', 'dilate', 'discModel'))) {
@@ -69,6 +62,13 @@ simpleSeg <- function(image,
     if (!(transform %in%  c("sqrt", "asinh", "norm99", "maxThresh", "tissueMask"))) {
       stop(sprintf("Invalid transform: '%s'. Choose from 'sqrt', 'asinh', 'norm99', 'maxThresh', 'tissueMask'.", transform))
     }
+  }
+  
+  imageClass <- class(image)
+  
+  if (!imageClass %in% c("list", "CytoImageList")) {
+    image <- list(image)
+    names(image) <- "image"
   }
 
   wholeCell <- FALSE
