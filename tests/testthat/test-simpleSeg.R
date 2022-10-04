@@ -1,4 +1,4 @@
-
+# helper function to load data for testing.
 load_data <- function() {
     # Get path to image directory
     pathToImages <- system.file("extdata", package = "simpleSeg")
@@ -21,7 +21,8 @@ load_data <- function() {
     return(images)
 }
 
-test_that("Test masks are the sames as the saved ones.", {
+# test that simpleSeg is running as expected 
+test_that("Test masks are the same as the saved ones.", {
     # load saved masks
     saved_masks <- readRDS("saved_masks.rds")
 
@@ -29,12 +30,13 @@ test_that("Test masks are the sames as the saved ones.", {
     images <- load_data()
 
     masks <- simpleSeg::simpleSeg(images,
-                                 nucleus = "HH3",
-                                 transform = "sqrt")
+                                  nucleus = "HH3",
+                                  transform = "sqrt")
 
     expect_equal(saved_masks, masks)
 })
 
+# test transform cellBody parameter
 test_that("Test if cellBody parameter is valid.", {
     # load images
     images <- load_data()
@@ -48,6 +50,7 @@ test_that("Test if cellBody parameter is valid.", {
                            cellBody='large'))
 })
 
+# test transform parameter
 test_that("Test if transform parameter is valid.", {
     # load images
     images <- load_data()
