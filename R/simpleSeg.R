@@ -51,9 +51,9 @@ simpleSeg <- function(image,
   # transform input validation
   if (is.null(transform)) {}
   else if (is.vector(transform)) {
-    dummy = TRUE
+    dummy <- TRUE
     for (element in transform) {
-       dummy = (element %in% c("sqrt", "asinh", "norm99", "maxThresh", "tissueMask")) && dummy
+       dummy <- (element %in% c("sqrt", "asinh", "norm99", "maxThresh", "tissueMask")) && dummy
        if (!dummy) {
         stop(sprintf("Transform list contains invalid transform: '%s'. Choose from 'sqrt', 'asinh', 'norm99', 'maxThresh', 'tissueMask'.", element))
        }
