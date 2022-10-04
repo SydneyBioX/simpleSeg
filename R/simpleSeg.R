@@ -44,14 +44,14 @@ simpleSeg <- function(image,
                       cores=1) {
 
   # cellBody input validation
-  valid_cellBody = c('none', 'dilate', 'discModel')
-  if (!(cellBody %in% valid_cellBody)) {
+  valid_cellbody <- c("none", "dilate", "discModel")
+  if (!(cellBody %in% valid_cellbody)) {
     # Throw informative error message.
     stop(
       paste0(
         sprintf("Invalid method of cytoplasm identification: '%s'. Must be ",
                 cellBody),
-        paste(valid_cellBody, collapse = ", "),
+        paste(valid_cellbody, collapse = ", "),
         "."
       )
     )
