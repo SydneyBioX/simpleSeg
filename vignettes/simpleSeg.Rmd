@@ -168,7 +168,7 @@ Method | Description
 
 ```{r}
 masks <- simpleSeg::simpleSeg(images,
-                              cellBody = "HH3",
+                              nucleus = "HH3",
                               cores = 5)
 ```
 
