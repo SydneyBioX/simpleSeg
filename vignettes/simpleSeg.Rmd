@@ -52,12 +52,12 @@ BiocManager::install("simpleSeg")
 
 # Overview
 
-The `simpleSeg` package provides a structured pipeline for creating segmentation masks from multiplexed cellular images in the form of tiff stacks. `simpleSeg` also facilitates the normalization of cellular features after these features have been extracted from the image, priming cells for classification / clustering. These functions leverage the functionality of the [`EBImage`](https://bioconductor.org/packages/release/bioc/vignettes/EBImage/inst/doc/EBImage-introduction.html) package on Bioconductor. For more flexibility when performing your segmentation in R we recommend learning to use the `EBimage` package. A key strength of `simpleSeg` is that we have coded multiple ways to perform some simple segmentation operations as well as incorporating multiple automatic procedures to optimise key parameters when these aren't specified. 
+The `simpleSeg` package provides a structured pipeline for creating segmentation masks from multiplexed cellular images in the form of tiff stacks. `simpleSeg` also facilitates the normalisation of cellular features after these features have been extracted from the image, priming cells for classification / clustering. These functions leverage the functionality of the [`EBImage`](https://bioconductor.org/packages/release/bioc/vignettes/EBImage/inst/doc/EBImage-introduction.html) package on Bioconductor. For more flexibility when performing your segmentation in R we recommend learning to use the `EBimage` package. A key strength of `simpleSeg` is that we have coded multiple ways to perform some simple segmentation operations as well as incorporating multiple automatic procedures to optimise key parameters when these aren't specified. 
 
 
 # Load example data
 
-In the following we will reanalyse two MIBI-TOF images from [(Risom et al, 2022)](https://www.sciencedirect.com/science/article/pii/S0092867421014860?via%3Dihub#!) profiling the spatial landscape of ductal carcinoma in situ (DCIS), which is a pre-invasive lesion that is thought to be a precursor to invasive breast cancer (IBC). These images are stored in the "extdata" folder in the package. When the path to this folder is identified, we can read these images into R using `readImage` from `EBImage` and store these as a `CytoImageList` using the `cytomapper` package.
+In the following we will reanalyse two MIBI-TOF images from [(Risom et al., 2022)](https://www.sciencedirect.com/science/article/pii/S0092867421014860?via%3Dihub#!) profiling the spatial landscape of ductal carcinoma in situ (DCIS), which is a pre-invasive lesion that is thought to be a precursor to invasive breast cancer (IBC). These images are stored in the "extdata" folder in the package. When the path to this folder is identified, we can read these images into R using `readImage` from `EBImage` and store these as a `CytoImageList` using the `cytomapper` package.
 
 ```{r}
 
@@ -99,7 +99,7 @@ mcols(images)$imageID <- names(images)
 
 # Segmentation
 
-`simpleSeg` accepts an `Image`, `list` of `Image`'s, or `CytoImageList` as input and generates a `CytoImageList` of masks as output. Here we will use the histone H3 channel in the image as a nuclei marker for segmentation. By default `simpleseg` will isolate individual nuclei by watershedding using a combination of the intensity of this marker and a distance map. Nuclei are dilated out by 3 pixels to capture the cytoplasm. The user may also specify simple image transformations using using the `transform` argument.
+`simpleSeg` accepts an `Image`, `list` of `Image`'s, or `CytoImageList` as input and generates a `CytoImageList` of masks as output. Here we will use the histone H3 channel in the image as a nuclei marker for segmentation. By default, `simpleseg` will isolate individual nuclei by watershedding using a combination of the intensity of this marker and a distance map. Nuclei are dilated out by 3 pixels to capture the cytoplasm. The user may also specify simple image transformations using the `transform` argument.
 
 ```{r}
 
@@ -146,10 +146,11 @@ cytomapper::plotPixels(image = images[1],
 
 ```
 
-## Methods of watershedding
+## Methods of Watershedding
+
 Watershedding is a method which treats images as topographical maps in order to identify individual objects and the borders between them.
 
-The user may specify how watershedding is to be performed by using the `watershed` arguement in `simpleSeg`.
+The user may specify how watershedding is to be performed by using the `watershed` argument in `simpleSeg`.
 
 Method | Description
 ----|:----:|:----:
@@ -180,24 +181,24 @@ masks <- simpleSeg::simpleSeg(images,
 
 # Summarise cell features
 
-In order to characterise the phenotypes of each of the segmented cells, `measureObjects` from `cytomapper` will calculate the average intensity of each channel within each cell as well as a few morphological features. The channel intensities will be stored in the `counts assay` in a `SingleCellExperiment`. Information on the spatial location of each cell is stored in `colData` in the `m.cx` and `m.cy` columns. In addition to this, it will propogate the information we have store in the `mcols` of our `CytoImageList` in the `colData` of the resulting `SingleCellExperiment`. 
+In order to characterise the phenotypes of each of the segmented cells, `measureObjects` from `cytomapper` will calculate the average intensity of each channel within each cell as well as a few morphological features. The channel intensities will be stored in the `counts assay` in a `SingleCellExperiment`. Information on the spatial location of each cell is stored in `colData` in the `m.cx` and `m.cy` columns. In addition to this, it will propagate the information we have store in the `mcols` of our `CytoImageList` in the `colData` of the resulting `SingleCellExperiment`. 
 
 ```{r, out.width = "400px"}
 cellSCE <- cytomapper::measureObjects(masks, images, img_id = "imageID")
 ```
 
-# Normalizing cells
+# Normalising cells
 
-Once cellular features have been extracted into a SingleCellExperement or dataframe, these features may then be normalized using the `normalizeCells`function. any number of Transformations: `asinh`, `sqrt`. and Normalization methods.
+Once cellular features have been extracted into a SingleCellExperement or dataframe, these features may then be normalised using the `normalizeCells`function, transformed by any number of transformations (e.g., `asinh`, `sqrt`) and normalisation methods.
 
-`mean`(Divides the marker cellular marker intensities by their mean), `minMax` (Subtracts the minimum value and scales markers between 0 and 1.), `trim99` (Sets the highest 1% of values to the value of the 99th percentile.), `PC1` (Removes the 1st principle component) can be performed with one call of the function, in the order specified by the user.
+`mean`(Divides the marker cellular marker intensities by their mean), `minMax` (Subtracts the minimum value and scales markers between 0 and 1.), `trim99` (Sets the highest 1% of values to the value of the 99th percentile.), `PC1` (Removes the 1st principal component) can be performed with one call of the function, in the order specified by the user.
 
 Method | Description
 ----|:----:|:----:
 <span style="font-family: 'Courier New', monospace;">"mean"</span> |  <span style="font-family: 'Courier New', monospace;">Divides the marker cellular marker intensities by their mean.</span>
 <span style="font-family: 'Courier New', monospace;">"minMax"</span> | <span style="font-family: 'Courier New', monospace;">Subtracts the minimum value and scales markers between 0 and 1.</span>
 <span style="font-family: 'Courier New', monospace;">"trim99"</span> | <span style="font-family: 'Courier New', monospace;">Sets the highest 1% of values to the value of the 99th percentile.`</span>
-<span style="font-family: 'Courier New', monospace;">"PC1"</span> |  <span style="font-family: 'Courier New', monospace;">Removes the 1st principle component) can be performed with one call of the function, in the order specified by the user.</span>
+<span style="font-family: 'Courier New', monospace;">"PC1"</span> |  <span style="font-family: 'Courier New', monospace;">Removes the 1st principal component) can be performed with one call of the function, in the order specified by the user.</span>
 
 ```{r}
 # Transform and normalise the marker expression of each cell type.
