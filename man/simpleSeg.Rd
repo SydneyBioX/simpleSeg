@@ -24,7 +24,7 @@ simpleSeg(
 function.}
 
 \item{nucleus}{The marker or list of markers corresponding to the nuclei
-marker/s. PCA can also be specified in addition to or im
+marker/s. PCA can also be specified in addition to or in
 place of a marker.}
 
 \item{cellBody}{Method of cytoplasm identification. Can be 'none', dilate',
@@ -74,14 +74,15 @@ Perform simple segmentation of multiplexed cellular images
 library(cytomapper)
 data("pancreasImages")
 masks <- simpleSeg(pancreasImages,
-                   nucleus = "H3",
-                   cellBody = "discModel",
-                   sizeSelection = 8,
-                   smooth = 1.2,
-                   transform = "sqrt",
-                   watershed = "combine",
-                   tolerance = 1, ext = 1,
-                   discSize = 3,
-                   cores = 5)
+  nucleus = "H3",
+  cellBody = "discModel",
+  sizeSelection = 8,
+  smooth = 1.2,
+  transform = "sqrt",
+  watershed = "combine",
+  tolerance = 1, ext = 1,
+  discSize = 3,
+  cores = 5
+)
 
 }
