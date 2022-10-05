@@ -10,3 +10,5 @@ simpleSeg.BiocCheck/00BiocCheck.log
 tests/testthat/testthat-problems.rds
 /doc/
 /Meta/
+.vscode/ltex.hiddenFalsePositives.en-AU.txt
+.vscode/ltex.dictionary.en-AU.txt
