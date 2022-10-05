@@ -129,7 +129,7 @@ simpleSeg <- function(image,
     wholeCell <- TRUE
   }
 
-  x <- runif(1)
+  x <- runif(1) # nolint
 
   BPPARAM <- generateBPParam(cores)
 
@@ -148,7 +148,7 @@ simpleSeg <- function(image,
 
   # if dilate or none
   if (cellBody %in% c("dilate", "none")) {
-    nmask <- sapply(nmask, EBImage::Image, simplify = FALSE)
+    nmask <- lapply(nmask, EBImage::Image)
     cyto.nmask <- cytomapper::CytoImageList(nmask)
 
     if (is.null(names(cyto.nmask))) {
