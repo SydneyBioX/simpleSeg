@@ -39,15 +39,16 @@
 #' library(cytomapper)
 #' data("pancreasImages")
 #' masks <- simpleSeg(pancreasImages,
-#'                    nucleus = "H3",
-#'                    cellBody = "discModel",
-#'                    sizeSelection = 8,
-#'                    smooth = 1.2,
-#'                    transform = "sqrt",
-#'                    watershed = "combine",
-#'                    tolerance = 1, ext = 1,
-#'                    discSize = 3,
-#'                    cores = 5)
+#'   nucleus = "H3",
+#'   cellBody = "discModel",
+#'   sizeSelection = 8,
+#'   smooth = 1.2,
+#'   transform = "sqrt",
+#'   watershed = "combine",
+#'   tolerance = 1, ext = 1,
+#'   discSize = 3,
+#'   cores = 5
+#' )
 #'
 #' @export simpleSeg
 #' @rdname simpleSeg
@@ -77,8 +78,10 @@ simpleSeg <- function(image,
     # Throw informative error message.
     stop(
       paste0(
-        sprintf("Invalid method of cytoplasm identification: '%s'. Must be ",
-                cellBody),
+        sprintf(
+          "Invalid method of cytoplasm identification: '%s'. Must be ",
+          cellBody
+        ),
         paste(valid_cellbody, collapse = ", "),
         "."
       )
@@ -97,8 +100,10 @@ simpleSeg <- function(image,
         # Throw informative error message.
         stop(
           paste0(
-            sprintf("Transform list contains invalid transform: '%s'. ",
-                    element),
+            sprintf(
+              "Transform list contains invalid transform: '%s'. ",
+              element
+            ),
             paste(valid_tansforms, collapse = ", "),
             "."
           )
@@ -134,17 +139,18 @@ simpleSeg <- function(image,
   BPPARAM <- generateBPParam(cores)
 
   nmask <- nucSegParallel(image,
-                          nucleusIndex = nucleus,
-                          sizeSelection = sizeSelection,
-                          smooth = smooth,
-                          watershed = watershed,
-                          tolerance = tolerance,
-                          ext = ext,
-                          wholeCell = wholeCell,
-                          discSize = discSize,
-                          transform = transform,
-                          tissueIndex = tissue,
-                          BPPARAM = BPPARAM)
+    nucleusIndex = nucleus,
+    sizeSelection = sizeSelection,
+    smooth = smooth,
+    watershed = watershed,
+    tolerance = tolerance,
+    ext = ext,
+    wholeCell = wholeCell,
+    discSize = discSize,
+    transform = transform,
+    tissueIndex = tissue,
+    BPPARAM = BPPARAM
+  )
 
   # if dilate or none
   if (cellBody %in% c("dilate", "none")) {
@@ -169,29 +175,30 @@ simpleSeg <- function(image,
 
   if (cellBody == "discModel") {
     cells <- cytSegParallel(nmask,
-                            image,
-                            sizeSelection = sizeSelection,
-                            smooth = smooth,
-                            discSize = discSize,
-                            transform = transform,
-                            BPPARAM = BPPARAM)
+      image,
+      sizeSelection = sizeSelection,
+      smooth = smooth,
+      discSize = discSize,
+      transform = transform,
+      BPPARAM = BPPARAM
+    )
 
-    #Converting from a tiff stack to individual images
+    # Converting from a tiff stack to individual images
     cellList <- NULL
 
-    for (i in seq_along(cells[1,1,])) {
-      cellList[[i]] <- as.Image(cells[,,i])
+    for (i in seq_along(cells[1, 1, ])) {
+      cellList[[i]] <- as.Image(cells[, , i])
     }
 
     cyto.mask <- cytomapper::CytoImageList(cellList)
 
     if (is.null(names(image))) {
       names(image) <- c(seq_along(image))
-      }
+    }
 
     if (is(image, "CytoImageList")) {
       mcols(cyto.mask) <- mcols(image)
-      }
+    }
 
     S4Vectors::mcols(cyto.mask)$imageID <- names(image)
 
@@ -203,17 +210,18 @@ simpleSeg <- function(image,
 
   if (any(cellBody %in% dimnames(image[[1]])[[3]])) {
     cells <- cytSeg2Parallel(nmask,
-                             image,
-                             channel = cellBody,
-                             sizeSelection = sizeSelection,
-                             smooth = smooth,
-                             transform = transform,
-                             BPPARAM = BPPARAM)
+      image,
+      channel = cellBody,
+      sizeSelection = sizeSelection,
+      smooth = smooth,
+      transform = transform,
+      BPPARAM = BPPARAM
+    )
 
-    #Converting from a tiff stack to individual images
+    # Converting from a tiff stack to individual images
     cellList <- NULL
-    for (i in seq_along(cells[1,1,])) {
-      cellList[[i]] <- as.Image(cells[,,i])
+    for (i in seq_along(cells[1, 1, ])) {
+      cellList[[i]] <- as.Image(cells[, , i])
     }
 
     cyto.mask <- cytomapper::CytoImageList(cellList)
