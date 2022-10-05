@@ -6,7 +6,7 @@
 #' @importFrom methods is
 #' @importFrom stats coef cor median resid runif sd
 
-calcTissueMask <- function(image, tissue_index, size_selection = 10) {
+.calcTissueMask <- function(image, tissue_index, size_selection = 10) {
   if (is.null(tissue_index)) {
     tissue_index <- seq_len(dim(image)[3])
   }
