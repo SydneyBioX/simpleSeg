@@ -15,7 +15,7 @@
 
   ## Prepare matrix use to segment nuclei
   if ("tissueMask" %in% transform) { ## calculate tissue mask
-    tissueMask <- calcTissueMask(
+    tissueMask <- .calcTissueMask(
       image,
       tissueIndex
     ) ## separate tissue from background
