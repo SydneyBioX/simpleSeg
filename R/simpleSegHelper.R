@@ -1,7 +1,7 @@
 #' @importFrom EBImage Image abind
 #' @importFrom methods is
 #' @importFrom stats coef cor median resid runif sd
-nucSeg <- function(image,
+.nucSeg <- function(image,
                    nucleusIndex = 1,
                    sizeSelection = 10,
                    smooth = 1,
@@ -102,7 +102,7 @@ nucSeg <- function(image,
   wMask
 }
 
-nucSegParallel <- function(image,
+.nucSegParallel <- function(image,
                            nucleusIndex = 1,
                            sizeSelection = 10,
                            smooth = 1,
@@ -115,7 +115,7 @@ nucSegParallel <- function(image,
                            tissueIndex = NULL,
                            BPPARAM = BiocParallel::SerialParam()) {
   output <- BiocParallel::bplapply(image,
-    nucSeg,
+    .nucSeg,
     nucleusIndex = nucleusIndex,
     tolerance = tolerance,
     watershed = watershed,
@@ -231,7 +231,7 @@ nucSegParallel <- function(image,
 }
 
 ## disc model ##
-CytSeg <- function(nmask,
+.CytSeg <- function(nmask,
                    image,
                    sizeSelection = 5,
                    smooth = 1,
@@ -282,14 +282,14 @@ CytSeg <- function(nmask,
 }
 
 ## Cyt seg parallel ##
-cytSegParallel <- function(nmask,
+.cytSegParallel <- function(nmask,
                            image,
                            sizeSelection = 5,
                            smooth = 1,
                            discSize = 3,
                            transform = NULL,
                            BPPARAM = BiocParallel::SerialParam()) {
-  test.masks.cyt <- BiocParallel::bpmapply(CytSeg,
+  test.masks.cyt <- BiocParallel::bpmapply(.CytSeg,
     nmask,
     image,
     MoreArgs = list(
@@ -303,7 +303,7 @@ cytSegParallel <- function(nmask,
 }
 
 ## Marker Model ## Cyt segmentation based on a specified cytoplasmic marker ##
-CytSeg2 <- function(nmask,
+.CytSeg2 <- function(nmask,
                     image,
                     channel = 2,
                     sizeSelection = 5,
@@ -349,7 +349,7 @@ CytSeg2 <- function(nmask,
 }
 
 ## Marker model Parallel ##
-cytSeg2Parallel <- function(nmask,
+.cytSeg2Parallel <- function(nmask,
                             image,
                             channel = 2,
                             sizeSelection = 5,
@@ -357,7 +357,7 @@ cytSeg2Parallel <- function(nmask,
                             transform = c("maxThresh", "asinh"),
                             BPPARAM = BiocParallel::SerialParam()) {
   test.masks.cyt <-
-    BiocParallel::bpmapply(CytSeg2,
+    BiocParallel::bpmapply(.CytSeg2,
       nmask,
       image,
       MoreArgs = list(

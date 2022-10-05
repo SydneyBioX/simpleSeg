@@ -138,7 +138,7 @@ simpleSeg <- function(image,
 
   BPPARAM <- generateBPParam(cores)
 
-  nmask <- nucSegParallel(image,
+  nmask <- .nucSegParallel(image,
     nucleusIndex = nucleus,
     sizeSelection = sizeSelection,
     smooth = smooth,
@@ -174,7 +174,7 @@ simpleSeg <- function(image,
   }
 
   if (cellBody == "discModel") {
-    cells <- cytSegParallel(nmask,
+    cells <- .cytSegParallel(nmask,
       image,
       sizeSelection = sizeSelection,
       smooth = smooth,
@@ -209,7 +209,7 @@ simpleSeg <- function(image,
   }
 
   if (any(cellBody %in% dimnames(image[[1]])[[3]])) {
-    cells <- cytSeg2Parallel(nmask,
+    cells <- .cytSeg2Parallel(nmask,
       image,
       channel = cellBody,
       sizeSelection = sizeSelection,
