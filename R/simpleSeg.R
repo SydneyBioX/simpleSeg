@@ -7,7 +7,7 @@
 #'                place of a marker.
 #' @param cellBody Method of cytoplasm identification. Can be 'none', dilate',
 #'                 'discModel' or the name of a dedicated cytoplasm marker
-#' @param sizeSelection Minimum pixels for an object to be recognised as a cell
+#' @param sizeSelection Minimum pixels for an object to be recognized as a cell
 #'                      and not noise.
 #' @param smooth The amount of Gaussian smoothing to be applied to the image/s
 #' @param transform A transformation or list of transformations and
