@@ -11,11 +11,15 @@
 #'                      and not noise.
 #' @param smooth The amount of Gaussian smoothing to be applied to the image/s
 #' @param transform A transformation or list of transformations and
-#'                  normalisations to be performed prior to nuclei or cytoplasm
+#'                  normalizations to be performed prior to nuclei or cytoplasm
 #'                  identification. Accepted vales: "sqrt", "asinh", "norm99",
-#'                  "maxThresh" and "tissueMask"
+#'                  "maxThresh" and "tissueMask". Tissue mask may be used when
+#'                  the sample does not take up the entirety of the image
+#'                  (typically a circular sample inside the image. When tissue 
+#'                  mask is specified the background noise present outside the 
+#'                  sample area is removed).
 #' @param watershed Method used to perform watersheding. Accepted values:
-#'                  "distance" or "combine"
+#'                  "distance" or "combine".
 #' @param tolerance The minimum height of the object in the units of image
 #'                  intensity between its highest point (seed) and the point
 #'                  where it contacts another object (checked for every contact
@@ -23,7 +27,7 @@
 #'                  object will be combined with one of its neighbors, which is
 #'                  the highest. Tolerance should be chosen according to the
 #'                  range of x. Default value is 1, which is a reasonable value
-#'                  if x comes from distmap
+#'                  if x comes from distmap.
 #' @param ext Radius of the neighborhood in pixels for the detection of
 #'            neighboring objects. Higher value smooths out small objects.
 #' @param discSize The size of dilation around nuclei to create cell disc or
@@ -72,6 +76,48 @@ simpleSeg <- function(image,
                       tissue = NULL,
                       cores = 1) {
 
+  #sizeSelection validation
+  if (!(sizeSelection > 0)){
+    stop(
+      paste0(
+        sprintf(
+          "Invalid sizeSelection: '%s'. sizeSelection must be positive",
+          sizeSelection
+        )
+      )
+    )
+  }
+  if (!(smooth > 0)){
+    stop(
+      paste0(
+        sprintf(
+          "Invalid smooth: '%s'. smooth must be positive",
+          smooth
+        )
+      )
+    )
+  }
+ 
+  if (!(ext > 0)){
+    stop(
+      paste0(
+        sprintf(
+          "Invalid ext: '%s'. ext must be positive",
+          ext
+        )
+      )
+    )
+  }
+  if (!(discSize > 0)){
+    stop(
+      paste0(
+        sprintf(
+          "Invalid discSize: '%s'. discSize must be positive",
+          discSize
+        )
+      )
+    )
+  }
   # cellBody input validation
   valid_cellbody <- c("none", "dilate", "discModel")
   if (!(cellBody %in% valid_cellbody)) {

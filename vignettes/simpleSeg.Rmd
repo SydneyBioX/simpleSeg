@@ -1,5 +1,5 @@
 ---
-title: "simpleSeg"
+title: "Segmenting and normalizing multiplexed imaging data with simpleSeg"
 date: "`r BiocStyle::doc_date()`"
 params:
   test: FALSE
