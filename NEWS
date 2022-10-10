@@ -1,10 +1,20 @@
-Changes in version 0.99.0 (2022-09-?):
+Changes in version 0.99.0 (2022-09-16):
 
-+ Formatted the package for Bioconductor submission
++ Initial bioconductor submission
 
-Changes in version 0.99.1 (2022-09-?):
+Changes in version 0.99.1 (2022-09-28):
 
 + Bug fixing
 + loading missing functions into NAMESPACE
 
 Changes in version 0.99.2 (2022-010-06):
+
++ Extensive reformatting for bioconductor
++ Adding imports for functions
++ Extended the description
++ Added bug reports and url field
++ added ggplot to suggestes
++ Added news filedata generation script added
++ Various improvements to the vignette
++ Added unit tests
++ Replaced sapply with vapply
