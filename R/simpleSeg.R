@@ -34,7 +34,7 @@
 #'                 capture cytoplasm
 #' @param tissue Channels to be used to create the tissue mask if specified
 #'               in transforms.
-#' @param cores The number or cores for parallel processing
+#' @param cores The number or cores for parallel processing or a BPPARAM object
 #'
 #' @return A list of image masks
 #'
@@ -182,7 +182,11 @@ simpleSeg <- function(image,
 
   x <- runif(1) # nolint
 
-  BPPARAM <- generateBPParam(cores)
+  if (!is(cores, 'BPParam')) {
+    BPPARAM <- generateBPParam(cores)
+  } else {
+    BPPARAM <- cores
+  }
 
   nmask <- .nucSegParallel(image,
     nucleusIndex = nucleus,
