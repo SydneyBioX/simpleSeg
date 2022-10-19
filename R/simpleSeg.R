@@ -64,7 +64,7 @@
 #' @importFrom S4Vectors mcols mcols<-
 #' @importFrom methods is
 simpleSeg <- function(image,
-                      nucleus = "PCA",
+                      nucleus,
                       cellBody = "dilate",
                       sizeSelection = 10,
                       smooth = 1,
