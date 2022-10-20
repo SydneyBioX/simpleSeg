@@ -6,7 +6,7 @@
 \usage{
 simpleSeg(
   image,
-  nucleus = "PCA",
+  nucleus,
   cellBody = "dilate",
   sizeSelection = 10,
   smooth = 1,
@@ -30,18 +30,22 @@ place of a marker.}
 \item{cellBody}{Method of cytoplasm identification. Can be 'none', dilate',
 'discModel' or the name of a dedicated cytoplasm marker}
 
-\item{sizeSelection}{Minimum pixels for an object to be recognised as a cell
+\item{sizeSelection}{Minimum pixels for an object to be recognized as a cell
 and not noise.}
 
 \item{smooth}{The amount of Gaussian smoothing to be applied to the image/s}
 
 \item{transform}{A transformation or list of transformations and
-normalisations to be performed prior to nuclei or cytoplasm
+normalizations to be performed prior to nuclei or cytoplasm
 identification. Accepted vales: "sqrt", "asinh", "norm99",
-"maxThresh" and "tissueMask"}
+"maxThresh" and "tissueMask". Tissue mask may be used when
+the sample does not take up the entirety of the image
+(typically a circular sample inside the image. When tissue 
+mask is specified the background noise present outside the 
+sample area is removed).}
 
 \item{watershed}{Method used to perform watersheding. Accepted values:
-"distance" or "combine"}
+"distance" or "combine".}
 
 \item{tolerance}{The minimum height of the object in the units of image
 intensity between its highest point (seed) and the point
@@ -50,7 +54,7 @@ pixel). If the height is smaller than the tolerance, the
 object will be combined with one of its neighbors, which is
 the highest. Tolerance should be chosen according to the
 range of x. Default value is 1, which is a reasonable value
-if x comes from distmap}
+if x comes from distmap.}
 
 \item{ext}{Radius of the neighborhood in pixels for the detection of
 neighboring objects. Higher value smooths out small objects.}
@@ -61,7 +65,7 @@ capture cytoplasm}
 \item{tissue}{Channels to be used to create the tissue mask if specified
 in transforms.}
 
-\item{cores}{The number or cores for parallel processing}
+\item{cores}{The number or cores for parallel processing or a BPPARAM object}
 }
 \value{
 A list of image masks
