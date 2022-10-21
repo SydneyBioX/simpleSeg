@@ -18,3 +18,7 @@ Changes in version 0.99.2 (2022-010-06):
 + Various improvements to the vignette
 + Added unit tests
 + Replaced sapply with vapply
+
+Changes in version 0.99.7 (2022-010-21):
+
++ More changes based on the Bioconductor review process
