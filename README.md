@@ -29,6 +29,14 @@ devtools::install_github("SydneyBioX/simpleSeg")
 library(simpleSeg)
 ```
 
+### Installation Problems
+
+Usually caused by non-R dependencies being unavailable. Ensure that the following packages are installed on your system.
+
+```
+fftw, gdal, fortran, arrow
+```
+
 ### Submitting an issue or feature request
 
 `simpleSeg` is still under active development. We would greatly appreciate any and 
