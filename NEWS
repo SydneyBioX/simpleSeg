@@ -22,3 +22,4 @@ Changes in version 0.99.2 (2022-010-06):
 Changes in version 0.99.7 (2022-010-21):
 
 + More changes based on the Bioconductor review process
++ Modified test to make them more robust
