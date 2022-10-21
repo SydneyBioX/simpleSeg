@@ -23,9 +23,16 @@ simpleSeg(
 \item{image}{An image or list of images or CytoImageList to be read into the
 function.}
 
-\item{nucleus}{The marker or list of markers corresponding to the nuclei
-marker/s. PCA can also be specified in addition to or in
-place of a marker.}
+\item{nucleus}{The marker or list of markers corresponding to the nuclei. 
+PCA can also be specified in addition to or in place of a 
+marker and will perform principle component analysis to 
+identify the principle component which corresponds to the 
+nuclei, and use this in place of a marker for nuclei 
+identification. By default, PCA will use the first principle 
+component of the image. If a nuclei marker is specified in 
+addition to PCA, the principle component which is most 
+correlated with this marker will be used to identify the 
+nuclei.}
 
 \item{cellBody}{Method of cytoplasm identification. Can be 'none', dilate',
 'discModel' or the name of a dedicated cytoplasm marker}
