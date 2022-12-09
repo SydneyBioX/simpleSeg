@@ -23,11 +23,13 @@
     image <- EBImage::Image(sweep(image, c(1, 2), tissueMask, "*"))
   }
 
-  nuc <- .prepNucSignal(image, nucleusIndex, smooth)
+  
 
   if (is.null(transform) == FALSE) {
-    nuc <- .Transform(nuc, transform, isNuc = TRUE)
+    image <- .Transform(image, transform, isNuc = FALSE)
   }
+  #nmask
+  nuc <- .prepNucSignal(image, nucleusIndex, smooth)
 
   ## Segment Nuclei
   nth <- EBImage::otsu(nuc, range = range(nuc))
@@ -222,7 +224,7 @@
 }
 
 .maxThresh <- function(image) {
-  for (i in seq_len(dim(image))[3]) {
+  for (i in 1:dim(image)[3]) {
     if (max(image[, , i]) > 0) {
       image[, , i] <- image[, , i] / max(image[, , i])
     }
