@@ -41,7 +41,7 @@
   tissue[tissue_label %in% names(which(ttissue <= size_selection))] <- 0
 
   ## extract the convex hull
-  nonZero <- as.data.frame(which(tissue > 0, 2))
+  nonZero <- as.data.frame(which(tissue > 0, arr.ind = TRUE))
   colnames(nonZero) <- c("y", "x")
 
   ch <- grDevices::chull(nonZero[, c("x", "y")])
