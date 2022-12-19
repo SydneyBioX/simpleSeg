@@ -11,7 +11,8 @@
                    discSize = 3,
                    wholeCell = TRUE,
                    transform = NULL,
-                   tissueIndex = NULL) {
+                   tissueIndex = NULL,
+                   pca = FALSE) {
 
   ## Prepare matrix use to segment nuclei
   if ("tissueMask" %in% transform) { ## calculate tissue mask
@@ -29,7 +30,7 @@
     image <- .Transform(image, transform, isNuc = FALSE)
   }
   #nmask
-  nuc <- .prepNucSignal(image, nucleusIndex, smooth)
+  nuc <- .prepNucSignal(image, nucleusIndex, smooth, pca)
 
   ## Segment Nuclei
   nth <- EBImage::otsu(nuc, range = range(nuc))
@@ -115,6 +116,7 @@
                            watershed = "combine",
                            transform = NULL,
                            tissueIndex = NULL,
+                           pca = FALSE,
                            BPPARAM = BiocParallel::SerialParam()) {
   output <- BiocParallel::bplapply(image,
     .nucSeg,
@@ -128,48 +130,53 @@
     wholeCell = wholeCell,
     transform = transform,
     tissueIndex = tissueIndex,
+    pca = pca,
     BPPARAM = BPPARAM
   )
 }
 
-.prepNucSignal <- function(image, nucleusIndex, smooth) {
+.prepNucSignal <- function(image, nucleusIndex, smooth, pca) {
 
-  ## Default, assuming nucleusIndex is an integer
-  ind <- nucleusIndex
-
-  if ("PCA" %in% nucleusIndex) {
-    image <- apply(image, 3, function(x) {
-      x <- (x)
-      EBImage::gblur(x, smooth)
-    }, simplify = FALSE)
+  if (pca) {
+    #TODO: This should be somewhere in input validation, not here.
+    ind <- intersect(nucleusIndex, colnames(image.long))
 
     image <- EBImage::abind(image, along = 3)
-
     image.long <- apply(image, 3, as.numeric)
-    pca <- prcomp(image.long[, apply(image.long, 2, sd) > 0])
 
-    usePC <- 1
-    if (any(nucleusIndex %in% colnames(image.long))) {
-      ind <- intersect(nucleusIndex, colnames(image.long))
-      usePC <-
-        which.max(abs(apply(
-          pca$x,
-          2,
-          cor,
-          image.long[, nucleusIndex[nucleusIndex != "PCA"][1]]
-        )))
+    image_nucleus <- image[, , ind]
+    # if there is more than one nucluear marker, average them
+    if (length(ind) > 1) image_nucleus <- apply(image_nucleus, c(1, 2), mean)
+    image_nucleus <- EBImage::gblur(image_nucleus, smooth)
 
-      PC <- pca$x[, usePC]
-      PC <- PC * sign(cor(
-        PC,
-        image.long[, nucleusIndex[nucleusIndex != "PCA"][1]]
-      ))
-    } else {
-      PC <- pca$x[, usePC]
-    }
+    otsu_thresh <- EBImage::otsu(image_nucleus, range = range(image_nucleus))
+
+    nucleus_mask <- image_nucleus > otsu_thresh
+
+    kern <- EBImage::makeBrush(discSize, shape = "disc")
+    cell <- EBImage::dilate(nMask, kern)
+
+    use <- as.vector(cell)
+    pca <- prcomp(image.long[use, apply(image.long, 2, sd) >
+                              0], scale = TRUE)
+
+    #TODO: how to select PC?
+    # currently, PC is selected by highest correlation with the fist marker.
+    # this is arbitrary.
+    usePC <- which.max(abs(
+      apply(
+        pca$x, 2, cor,
+        image.long[use, nucleusIndex[1]]
+    )))
+    PC <- pca$x[, usePC]
+    PC <- PC * sign(cor(
+      PC, image.long[use, nucleusIndex[1]]
+    ))
 
     imagePC <- as.matrix(image[, , 1])
-    imagePC[] <- PC - min(PC)
+    imagePC[] <- 0
+    imagePC[cell] <- PC - min(PC)
+
     return(imagePC)
   }
 
@@ -181,7 +188,7 @@
   if (length(ind) > 1) nuc <- apply(nuc, c(1, 2), mean)
   nuc <- EBImage::gblur(nuc, smooth)
 
-  nuc - min(nuc)
+  return(nuc - min(nuc))
 }
 
 .estimateTolerance <- function(input, nMask) {

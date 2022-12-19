@@ -2,16 +2,7 @@
 #'
 #' @param image An image or list of images or CytoImageList to be read into the
 #'              function.
-#' @param nucleus The marker or list of markers corresponding to the nuclei. 
-#'                PCA can also be specified in addition to or in place of a 
-#'                marker and will perform principle component analysis to 
-#'                identify the principle component which corresponds to the 
-#'                nuclei, and use this in place of a marker for nuclei 
-#'                identification. By default, PCA will use the first principle 
-#'                component of the image. If a nuclei marker is specified in 
-#'                addition to PCA, the principle component which is most 
-#'                correlated with this marker will be used to identify the 
-#'                nuclei. 
+#' @param nucleus The marker or list of markers corresponding to the nuclei.
 #' @param cellBody Method of cytoplasm identification. Can be 'none', dilate',
 #'                 'discModel' or the name of a dedicated cytoplasm marker
 #' @param sizeSelection Minimum pixels for an object to be recognized as a cell
@@ -22,8 +13,8 @@
 #'                  identification. Accepted vales: "sqrt", "asinh", "norm99",
 #'                  "maxThresh" and "tissueMask". Tissue mask may be used when
 #'                  the sample does not take up the entirety of the image
-#'                  (typically a circular sample inside the image. When tissue 
-#'                  mask is specified the background noise present outside the 
+#'                  (typically a circular sample inside the image. When tissue
+#'                  mask is specified the background noise present outside the
 #'                  sample area is removed).
 #' @param watershed Method used to perform watersheding. Accepted values:
 #'                  "distance" or "combine".
@@ -41,6 +32,8 @@
 #'                 capture cytoplasm
 #' @param tissue Channels to be used to create the tissue mask if specified
 #'               in transforms.
+#' @param pca Whether to run PCA on aggregated nucleus markers in order to
+#'            detect the cellular nucclei.
 #' @param cores The number or cores for parallel processing or a BPPARAM object
 #'
 #' @return A list of image masks
@@ -81,7 +74,25 @@ simpleSeg <- function(image,
                       ext = 1,
                       discSize = 3,
                       tissue = NULL,
+                      pca = FALSE,
                       cores = 1) {
+
+  if ("PCA" %in% nucleus) {
+    if (length(nucleus) == 1) {
+      stop(
+        "simpleSeg no longer supports running PCA on all available markers.\n",
+        "Please input a list of nuclear markers."
+      )
+    } else {
+      warning(
+        "PCA is depreciated as a nuclear marker.\n",
+        "Please set simpleSeg's pca parameter to TRUE instead"
+      )
+    }
+    pca <- TRUE
+    # remove PCA from nucleus markers
+    nucleus <- nucleus[nucleus != "PCA"]
+  }
 
   #sizeSelection validation
   if (!(sizeSelection > 0)){
@@ -104,7 +115,7 @@ simpleSeg <- function(image,
       )
     )
   }
- 
+
   if (!(ext > 0)){
     stop(
       paste0(
@@ -206,6 +217,7 @@ simpleSeg <- function(image,
     discSize = discSize,
     transform = transform,
     tissueIndex = tissue,
+    pca = pca,
     BPPARAM = BPPARAM
   )
 
