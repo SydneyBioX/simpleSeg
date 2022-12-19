@@ -16,6 +16,7 @@ simpleSeg(
   ext = 1,
   discSize = 3,
   tissue = NULL,
+  pca = FALSE,
   cores = 1
 )
 }
@@ -23,16 +24,7 @@ simpleSeg(
 \item{image}{An image or list of images or CytoImageList to be read into the
 function.}
 
-\item{nucleus}{The marker or list of markers corresponding to the nuclei. 
-PCA can also be specified in addition to or in place of a 
-marker and will perform principle component analysis to 
-identify the principle component which corresponds to the 
-nuclei, and use this in place of a marker for nuclei 
-identification. By default, PCA will use the first principle 
-component of the image. If a nuclei marker is specified in 
-addition to PCA, the principle component which is most 
-correlated with this marker will be used to identify the 
-nuclei.}
+\item{nucleus}{The marker or list of markers corresponding to the nuclei.}
 
 \item{cellBody}{Method of cytoplasm identification. Can be 'none', dilate',
 'discModel' or the name of a dedicated cytoplasm marker}
@@ -47,8 +39,8 @@ normalizations to be performed prior to nuclei or cytoplasm
 identification. Accepted vales: "sqrt", "asinh", "norm99",
 "maxThresh" and "tissueMask". Tissue mask may be used when
 the sample does not take up the entirety of the image
-(typically a circular sample inside the image. When tissue 
-mask is specified the background noise present outside the 
+(typically a circular sample inside the image. When tissue
+mask is specified the background noise present outside the
 sample area is removed).}
 
 \item{watershed}{Method used to perform watersheding. Accepted values:
@@ -71,6 +63,9 @@ capture cytoplasm}
 
 \item{tissue}{Channels to be used to create the tissue mask if specified
 in transforms.}
+
+\item{pca}{Whether to run PCA on aggregated nucleus markers in order to
+detect the cellular nucclei.}
 
 \item{cores}{The number or cores for parallel processing or a BPPARAM object}
 }
