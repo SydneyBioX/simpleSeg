@@ -137,12 +137,18 @@
 
 .prepNucSignal <- function(image, nucleusIndex, smooth, pca) {
 
-  if (pca) {
-    #TODO: This should be somewhere in input validation, not here.
-    ind <- intersect(nucleusIndex, colnames(image.long))
+  #TODO: PCA fails without smoothing, why?
+  image <- apply(image, 3, function(x) {
+    x <- (x)
+    EBImage::gblur(x, smooth)
+  }, simplify = FALSE)
 
+  if (pca) {
     image <- EBImage::abind(image, along = 3)
     image.long <- apply(image, 3, as.numeric)
+
+    #TODO: This should be somewhere in input validation, not here.
+    ind <- intersect(nucleusIndex, colnames(image.long))
 
     image_nucleus <- image[, , ind]
     # if there is more than one nucluear marker, average them
@@ -153,12 +159,12 @@
 
     nucleus_mask <- image_nucleus > otsu_thresh
 
-    kern <- EBImage::makeBrush(discSize, shape = "disc")
-    cell <- EBImage::dilate(nMask, kern)
+    #TODO: figure out if 3 is a sesible default in this case
+    kern <- EBImage::makeBrush(3, shape = "disc")
+    cell <- EBImage::dilate(nucleus_mask, kern)
 
     use <- as.vector(cell)
-    pca <- prcomp(image.long[use, apply(image.long, 2, sd) >
-                              0], scale = TRUE)
+    pca <- prcomp(image.long[use, apply(image.long, 2, sd) > 0], scale = TRUE)
 
     #TODO: how to select PC?
     # currently, PC is selected by highest correlation with the fist marker.
