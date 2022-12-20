@@ -1,7 +1,7 @@
 library(simpleSeg)
 library(cytomapper)
 
-pathToImages <- "inst/extdata"
+pathToImages <- "/home/nick/Downloads/images/"
 # Get directories of images
 imageDirs <- dir(pathToImages, full.names = TRUE)
 names(imageDirs) <- dir(pathToImages, full.names = FALSE)
@@ -13,11 +13,11 @@ images <- cytomapper::CytoImageList(images)
 image = images[[1]]
 discSize = 3
 smooth = 1
-nucleusIndex <- "HIF1a"
+nucleusIndex <- "191Ir_DNA1"
 sizeSelection <- 40
 ext <- 1
 # Mask the nuclei
-nuc <- image[,, "HIF1a"]
+nuc <- image[,, "191Ir_DNA1"]
 nth <- EBImage::otsu(nuc, range = range(nuc))
 nMask <- nuc > nth
 # Dilate out from the nuclei
@@ -30,7 +30,7 @@ image <- apply(image, 3, function(x) {
 }, simplify = FALSE)
 # Do PCA only on the dilated nuclei
 image <- EBImage::abind(image, along = 3)
-image.long <- apply(image.long, 3, as.numeric)
+image.long <- apply(image, 3, as.numeric)
 use <- as.vector(cell)
 pca <- prcomp(image.long[use, apply(image.long, 2, sd) >
                            0], scale = TRUE)
@@ -52,10 +52,13 @@ imagePC[cell] <- PC -min(PC)
 nuc <- imagePC
 nth <- EBImage::otsu(nuc, range = range(nuc))
 nuc[nuc < nth] <- 0
+
+
 #Estimate tolerance for watershed
 y <- EBImage::distmap(nuc>0)
 fit <- lm(as.numeric(nuc[y > 0 & y < 9]) ~ as.numeric(y[y > 0 & y < 9]))
 tolerance <- coef(fit)[2]
+
 # Do watershed
 wMask <- EBImage::watershed(nuc, tolerance = tolerance, ext = ext)
 tabNuc <- table(wMask)
