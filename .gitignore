@@ -11,3 +11,4 @@ tests/testthat/testthat-problems.rds
 /doc/
 /Meta/
 .vscode
+test.r
