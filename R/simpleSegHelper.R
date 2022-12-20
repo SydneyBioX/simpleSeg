@@ -69,7 +69,7 @@
     dist <- EBImage::distmap(nMask)
 
     if (is.null(tolerance)) {
-      tolerance <- .estimateTolerance(dist * nuc, nMask)
+      tolerance <- .estimateTolerance(dist * nuc, nMask, discSize = discSize)
     }
 
     wMask <- EBImage::watershed(dist * nuc, tolerance = tolerance, ext = ext)
@@ -83,12 +83,12 @@
   }
 
   ## Add distance to nuc signal
-  cellRadius <- 2 * floor(sqrt(sizeSelection / pi) / 2) + 1
-  nuc <- filter2(nuc, makeBrush(cellRadius, shape = "disc"))
-  nuc <- nuc * nMask
+  # cellRadius <- 2 * floor(sqrt(sizeSelection / pi) / 2) + 1
+  # nuc <- filter2(nuc, makeBrush(cellRadius, shape = "disc"))
+  # nuc <- nuc * nMask
 
   if (is.null(tolerance)) {
-    tolerance <- .estimateTolerance(nuc, nMask)
+    tolerance <- .estimateTolerance(nuc, nMask, discSize)
   }
 
   wMask <- EBImage::watershed(nuc, tolerance = tolerance, ext = ext)
@@ -136,12 +136,10 @@
 }
 
 .prepNucSignal <- function(image, nucleusIndex, smooth, pca) {
-
-  #TODO: PCA fails without smoothing, why?
-  image <- apply(image, 3, function(x) {
-    x <- (x)
-    EBImage::gblur(x, smooth)
-  }, simplify = FALSE)
+    image <- apply(image, 3, function(x) {
+      x <- (x)
+      EBImage::gblur(x, smooth)
+    }, simplify = FALSE)
 
   if (pca) {
     image <- EBImage::abind(image, along = 3)
@@ -153,7 +151,6 @@
     image_nucleus <- image[, , ind]
     # if there is more than one nucluear marker, average them
     if (length(ind) > 1) image_nucleus <- apply(image_nucleus, c(1, 2), mean)
-    image_nucleus <- EBImage::gblur(image_nucleus, smooth)
 
     otsu_thresh <- EBImage::otsu(image_nucleus, range = range(image_nucleus))
 
@@ -197,10 +194,14 @@
   return(nuc - min(nuc))
 }
 
-.estimateTolerance <- function(input, nMask) {
+.estimateTolerance <- function(input, nMask, discSize) {
+
   y <- EBImage::distmap(nMask)
-  fit <- lm(as.numeric(input[y > 0]) ~ as.numeric(y[y > 0]) - 1)
-  tolerance <- coef(fit)[1]
+  max_tresh = max(3, 3 * discSize)
+  fit <- lm(
+    as.numeric(input[y > 0 & y < max_tresh]) ~ as.numeric(y[y > 0 & y < max_tresh])
+  )
+  tolerance <- coef(fit)[2]
   tolerance
 }
 
