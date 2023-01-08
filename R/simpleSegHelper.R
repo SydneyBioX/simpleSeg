@@ -168,11 +168,11 @@
     usePC <- which.max(abs(
       apply(
         pca$x, 2, cor,
-        image.long[use, nucleusIndex[1]]
+        image.long[use, image_nucleus]
     )))
     PC <- pca$x[, usePC]
     PC <- PC * sign(cor(
-      PC, image.long[use, nucleusIndex[1]]
+      PC, image.long[use, image_nucleus]
     ))
 
     imagePC <- as.matrix(image[, , 1])
