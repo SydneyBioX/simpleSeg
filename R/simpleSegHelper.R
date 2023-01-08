@@ -30,7 +30,7 @@
     image <- .Transform(image, transform, isNuc = FALSE)
   }
   #nmask
-  nuc <- .prepNucSignal(image, nucleusIndex, smooth, pca)
+  nuc <- .prepNucSignal(image, nucleusIndex, smooth, pca, discSize)
 
   ## Segment Nuclei
   nth <- EBImage::otsu(nuc, range = range(nuc))
@@ -135,7 +135,7 @@
   )
 }
 
-.prepNucSignal <- function(image, nucleusIndex, smooth, pca) {
+.prepNucSignal <- function(image, nucleusIndex, smooth, pca, discSize) {
     image <- apply(image, 3, function(x) {
       x <- (x)
       EBImage::gblur(x, smooth)
@@ -156,8 +156,7 @@
 
     nucleus_mask <- image_nucleus > otsu_thresh
 
-    #TODO: figure out if 3 is a sesible default in this case
-    kern <- EBImage::makeBrush(3, shape = "disc")
+    kern <- EBImage::makeBrush(discSize, shape = "disc")
     cell <- EBImage::dilate(nucleus_mask, kern)
 
     use <- as.vector(cell)
