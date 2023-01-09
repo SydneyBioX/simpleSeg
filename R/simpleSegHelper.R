@@ -162,9 +162,6 @@
     use <- as.vector(cell)
     pca <- prcomp(image.long[use, apply(image.long, 2, sd) > 0], scale = TRUE)
 
-    #TODO: how to select PC?
-    # currently, PC is selected by highest correlation with the fist marker.
-    # this is arbitrary.
     usePC <- which.max(abs(
       apply(
         pca$x, 2, cor,
