@@ -30,7 +30,7 @@ Suggests:
     knitr,
     ggplot2
 License: GPL-3
-RoxygenNote: 7.2.2
+RoxygenNote: 7.2.3
 Config/testthat/edition: 3
 BugReports: https://github.com/SydneyBioX/simpleSeg/issues
 URL: https://github.com/SydneyBioX/simpleSeg
