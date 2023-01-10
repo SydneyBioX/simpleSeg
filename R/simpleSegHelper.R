@@ -164,15 +164,14 @@
     use <- as.vector(cell)
     pca <- prcomp(image.long[use, apply(image.long, 2, sd) > 0], scale = TRUE)
 
-    # TODO: Figure out method to correlate PC with avaraged image_nucleus
     usePC <- which.max(abs(
       apply(
         pca$x, 2, cor,
-        image.long[use, nucleusIndex[1]]
+        image_nucleus[use]
     )))
     PC <- pca$x[, usePC]
     PC <- PC * sign(cor(
-      PC, image.long[use, nucleusIndex[1]]
+      PC, image_nucleus[use]
     ))
 
     imagePC <- as.matrix(image[, , 1])
