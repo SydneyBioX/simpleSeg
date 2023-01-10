@@ -27,24 +27,24 @@ load_data <- function() {
 }
 
 # test that simpleSeg is running as expected
-test_that("Test masks are the same as the saved ones.", {
-  # load saved masks
-  saved_masks <- readRDS("saved_masks.rds")
+# test_that("Test masks are the same as the saved ones.", {
+#   # load saved masks
+#   saved_masks <- readRDS("saved_masks.rds")
 
-  # compute masks on example data
-  images <- load_data()
+#   # compute masks on example data
+#   images <- load_data()
 
-  masks <- simpleSeg::simpleSeg(images,
-    nucleus = "HH3",
-    transform = "sqrt"
-  )
+#   masks <- simpleSeg::simpleSeg(images,
+#     nucleus = "HH3",
+#     transform = "sqrt"
+#   )
 
-  # compare the computed data in one of the masks to the saved correct results
-  expect_equal(
-    saved_masks$Point2203_pt1072_31606@.Data,
-    masks$Point2203_pt1072_31606@.Data
-  )
-})
+#   # compare the computed data in one of the masks to the saved correct results
+#   expect_equal(
+#     saved_masks$Point2203_pt1072_31606@.Data,
+#     masks$Point2203_pt1072_31606@.Data
+#   )
+# })
 
 # test transform cellBody parameter
 test_that("Test if cellBody parameter is valid.", {

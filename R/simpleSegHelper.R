@@ -136,12 +136,14 @@
 }
 
 .prepNucSignal <- function(image, nucleusIndex, smooth, pca, discSize) {
+
+  if (pca) {
+    
     image <- apply(image, 3, function(x) {
       x <- (x)
       EBImage::gblur(x, smooth)
     }, simplify = FALSE)
 
-  if (pca) {
     image <- EBImage::abind(image, along = 3)
     image.long <- apply(image, 3, as.numeric)
 
@@ -162,14 +164,15 @@
     use <- as.vector(cell)
     pca <- prcomp(image.long[use, apply(image.long, 2, sd) > 0], scale = TRUE)
 
+    # TODO: Figure out method to correlate PC with avaraged image_nucleus
     usePC <- which.max(abs(
       apply(
         pca$x, 2, cor,
-        image.long[use, image_nucleus]
+        image.long[use, nucleusIndex[1]]
     )))
     PC <- pca$x[, usePC]
     PC <- PC * sign(cor(
-      PC, image.long[use, image_nucleus]
+      PC, image.long[use, nucleusIndex[1]]
     ))
 
     imagePC <- as.matrix(image[, , 1])
