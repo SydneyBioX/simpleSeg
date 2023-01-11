@@ -9,6 +9,8 @@ Authors@R: c(person("Nicolas", "Canete", email = "nicolas.canete@sydney.edu.au",
     person("Alexander", "Nicholls", email = "alexanderwnicholls@gmail.com",
     role = c("aut")),
     person("Ellis", "Patrick", email = "ellis.patrick@sydney.edu.au",
+    role = c("aut", "cre")),
+    person("Usyd SOMS", "Bioconductor Maintainers", email = "maths.bioconductor@sydney.edu.au",
     role = c("aut", "cre")))
 VignetteBuilder: knitr
 Encoding: UTF-8
