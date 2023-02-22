@@ -6,7 +6,7 @@
                    sizeSelection = 10,
                    smooth = 1,
                    tolerance = NULL,
-                   watershed = "combine",
+                   watershed = "intensity",
                    ext = 1,
                    discSize = 3,
                    wholeCell = TRUE,

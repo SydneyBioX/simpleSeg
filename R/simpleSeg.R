@@ -17,7 +17,7 @@
 #'                  mask is specified the background noise present outside the
 #'                  sample area is removed).
 #' @param watershed Method used to perform watersheding. Accepted values:
-#'                  "distance" or "combine".
+#'                  "intensity", "distance" or "combine".
 #' @param tolerance The minimum height of the object in the units of image
 #'                  intensity between its highest point (seed) and the point
 #'                  where it contacts another object (checked for every contact
@@ -69,7 +69,7 @@ simpleSeg <- function(image,
                       sizeSelection = 10,
                       smooth = 1,
                       transform = NULL,
-                      watershed = "combine",
+                      watershed = "intensity",
                       tolerance = NULL,
                       ext = 1,
                       discSize = 3,
