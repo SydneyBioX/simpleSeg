@@ -12,7 +12,7 @@ Authors@R: c(person("Nicolas", "Canete", email = "nicolas.canete@sydney.edu.au",
     role = c("aut", "cre")))
 VignetteBuilder: knitr
 Encoding: UTF-8
-biocViews: Classification, Survival, SingleCell, Normalization
+biocViews: Classification, Survival, SingleCell, Normalization, Spatial
 Imports: 
     BiocParallel, 
     EBImage, 
