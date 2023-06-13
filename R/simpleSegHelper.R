@@ -68,8 +68,6 @@
 
     dist <- EBImage::distmap(nMask)
 
-  # if watershed is "intensity"
-
     if (is.null(tolerance)) {
       tolerance <- .estimateTolerance(dist * nuc, nMask, discSize = discSize)
     }
