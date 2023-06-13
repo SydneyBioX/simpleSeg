@@ -82,10 +82,6 @@
     return(wMask)
   }
 
-  ## Add distance to nuc signal
-  # cellRadius <- 2 * floor(sqrt(sizeSelection / pi) / 2) + 1
-  # nuc <- filter2(nuc, makeBrush(cellRadius, shape = "disc"))
-  # nuc <- nuc * nMask
 
   if (is.null(tolerance)) {
     tolerance <- .estimateTolerance(nuc, nMask, discSize)
