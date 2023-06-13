@@ -82,6 +82,7 @@
     return(wMask)
   }
 
+  # intensity watershedding
 
   if (is.null(tolerance)) {
     tolerance <- .estimateTolerance(nuc, nMask, discSize)
