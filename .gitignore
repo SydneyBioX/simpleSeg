@@ -12,3 +12,6 @@ tests/testthat/testthat-problems.rds
 /Meta/
 .vscode
 test.r
+prof_*
+
+debug
