@@ -95,7 +95,7 @@ simpleSeg <- function(image,
   }
 
   #sizeSelection validation
-  if (!(sizeSelection > 0)){
+  if (!(sizeSelection > 0)) {
     stop(
       paste0(
         sprintf(
@@ -105,7 +105,7 @@ simpleSeg <- function(image,
       )
     )
   }
-  if (!(smooth > 0)){
+  if (!(smooth > 0)) {
     stop(
       paste0(
         sprintf(
@@ -116,7 +116,7 @@ simpleSeg <- function(image,
     )
   }
 
-  if (!(ext > 0)){
+  if (!(ext > 0)) {
     stop(
       paste0(
         sprintf(
@@ -126,7 +126,7 @@ simpleSeg <- function(image,
       )
     )
   }
-  if (!(discSize > 0)){
+  if (!(discSize > 0)) {
     stop(
       paste0(
         sprintf(
