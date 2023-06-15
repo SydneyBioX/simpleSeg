@@ -88,7 +88,7 @@
     tolerance <- .estimateTolerance(nuc, nMask, discSize)
   }
 
-  wMask <- EBImage::watershed(nuc, tolerance = tolerance, ext = ext)
+  wMask <- EBImage::watershed(nuc * nMask, tolerance = tolerance, ext = ext)
 
   ## Size Selection
   tabNuc <- table(wMask)
