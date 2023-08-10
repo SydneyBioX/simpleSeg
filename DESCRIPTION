@@ -2,7 +2,7 @@ Package: simpleSeg
 Type: Package
 Title: A package to perform simple cell segmentation
 Description: Image segmentation is the process of identifying the borders of individual objects (in this case cells) within an image. This allows for the features of cells such as marker expression and morphology to be extracted, stored and analysed. simpleSeg provides functionality for user friendly, watershed based segmentation on multiplexed cellular images in R based on the intensity of user specified protein marker channels. simpleSeg can also be used for the normalization of single cell data obtained from multiple images.
-Version: 1.2.0
+Version: 1.2.1
 Date: 2022-04-21
 Authors@R: c(person("Nicolas", "Canete", email = "nicolas.canete@sydney.edu.au",
     role = c("aut")),
@@ -12,7 +12,7 @@ Authors@R: c(person("Nicolas", "Canete", email = "nicolas.canete@sydney.edu.au",
     role = c("aut", "cre")))
 VignetteBuilder: knitr
 Encoding: UTF-8
-biocViews: Classification, Survival, SingleCell, Normalization
+biocViews: Classification, Survival, SingleCell, Normalization, Spatial
 Imports: 
     BiocParallel, 
     EBImage, 
@@ -33,4 +33,4 @@ License: GPL-3
 RoxygenNote: 7.2.3
 Config/testthat/edition: 3
 BugReports: https://github.com/SydneyBioX/simpleSeg/issues
-URL: https://github.com/SydneyBioX/simpleSeg
+URL: https://sydneybiox.github.io/simpleSeg/ https://github.com/SydneyBioX/simpleSeg

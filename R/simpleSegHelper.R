@@ -2,18 +2,17 @@
 #' @importFrom methods is
 #' @importFrom stats coef cor median resid runif sd
 .nucSeg <- function(image,
-                   nucleusIndex = 1,
-                   sizeSelection = 10,
-                   smooth = 1,
-                   tolerance = NULL,
-                   watershed = "combine",
-                   ext = 1,
-                   discSize = 3,
-                   wholeCell = TRUE,
-                   transform = NULL,
-                   tissueIndex = NULL,
-                   pca = FALSE) {
-
+                    nucleusIndex = 1,
+                    sizeSelection = 10,
+                    smooth = 1,
+                    tolerance = NULL,
+                    watershed = "intensity",
+                    ext = 1,
+                    discSize = 3,
+                    wholeCell = TRUE,
+                    transform = NULL,
+                    tissueIndex = NULL,
+                    pca = FALSE) {
   ## Prepare matrix use to segment nuclei
   if ("tissueMask" %in% transform) { ## calculate tissue mask
     tissueMask <- .calcTissueMask(
@@ -24,12 +23,12 @@
     image <- EBImage::Image(sweep(image, c(1, 2), tissueMask, "*"))
   }
 
-  
+
 
   if (is.null(transform) == FALSE) {
     image <- .Transform(image, transform, isNuc = FALSE)
   }
-  #nmask
+  # nmask
   nuc <- .prepNucSignal(image, nucleusIndex, smooth, pca, discSize)
 
   ## Segment Nuclei
@@ -82,16 +81,13 @@
     return(wMask)
   }
 
-  ## Add distance to nuc signal
-  # cellRadius <- 2 * floor(sqrt(sizeSelection / pi) / 2) + 1
-  # nuc <- filter2(nuc, makeBrush(cellRadius, shape = "disc"))
-  # nuc <- nuc * nMask
+  # intensity watershedding
 
   if (is.null(tolerance)) {
     tolerance <- .estimateTolerance(nuc, nMask, discSize)
   }
 
-  wMask <- EBImage::watershed(nuc, tolerance = tolerance, ext = ext)
+  wMask <- EBImage::watershed(nuc * nMask, tolerance = tolerance, ext = ext)
 
   ## Size Selection
   tabNuc <- table(wMask)
@@ -106,18 +102,18 @@
 }
 
 .nucSegParallel <- function(image,
-                           nucleusIndex = 1,
-                           sizeSelection = 10,
-                           smooth = 1,
-                           tolerance = 0.01,
-                           ext = 1,
-                           discSize = 3,
-                           wholeCell = TRUE,
-                           watershed = "combine",
-                           transform = NULL,
-                           tissueIndex = NULL,
-                           pca = FALSE,
-                           BPPARAM = BiocParallel::SerialParam()) {
+                            nucleusIndex = 1,
+                            sizeSelection = 10,
+                            smooth = 1,
+                            tolerance = 0.01,
+                            ext = 1,
+                            discSize = 3,
+                            wholeCell = TRUE,
+                            watershed = "combine",
+                            transform = NULL,
+                            tissueIndex = NULL,
+                            pca = FALSE,
+                            BPPARAM = BiocParallel::SerialParam()) {
   output <- BiocParallel::bplapply(image,
     .nucSeg,
     nucleusIndex = nucleusIndex,
@@ -136,9 +132,7 @@
 }
 
 .prepNucSignal <- function(image, nucleusIndex, smooth, pca, discSize) {
-
   if (pca) {
-    
     image <- apply(image, 3, function(x) {
       x <- (x)
       EBImage::gblur(x, smooth)
@@ -147,10 +141,11 @@
     image <- EBImage::abind(image, along = 3)
     image.long <- apply(image, 3, as.numeric)
 
-    #TODO: This should be somewhere in input validation, not here.
+    # TODO: This should be somewhere in input validation, not here.
     ind <- intersect(nucleusIndex, colnames(image.long))
 
     image_nucleus <- image[, , ind]
+
     # if there is more than one nucluear marker, average them
     if (length(ind) > 1) image_nucleus <- apply(image_nucleus, c(1, 2), mean)
 
@@ -162,21 +157,28 @@
     cell <- EBImage::dilate(nucleus_mask, kern)
 
     use <- as.vector(cell)
-    pca <- prcomp(image.long[use, apply(image.long, 2, sd) > 0], scale = TRUE)
+
+    # subsample
+    # if there are more than 100k pixels, sample 100k for PCA (currently OFF)
+    if (length(use) > 1e5L) use <- sample(which(use), 1e5L)
+
+    useMarker <- apply(image.long, 2, sd) > 0
+    pca <- prcomp(image.long[use, useMarker], scale = TRUE)
 
     usePC <- which.max(abs(
       apply(
         pca$x, 2, cor,
         image_nucleus[use]
-    )))
+      )
+    ))
     PC <- pca$x[, usePC]
-    PC <- PC * sign(cor(
+    PC_sign <- sign(cor(
       PC, image_nucleus[use]
     ))
 
-    imagePC <- as.matrix(image[, , 1])
-    imagePC[] <- 0
-    imagePC[cell] <- PC - min(PC)
+    imagePC <- image.long[, useMarker] %*% (pca$rotation[, usePC] * PC_sign)
+    imagePC <- imagePC - min(imagePC)
+    dim(imagePC) <- dim(image)[1:2]
 
     return(imagePC)
   }
@@ -193,9 +195,8 @@
 }
 
 .estimateTolerance <- function(input, nMask, discSize) {
-
   y <- EBImage::distmap(nMask)
-  max_tresh = max(3, 3 * discSize)
+  max_tresh <- max(3, 3 * discSize)
   fit <- lm(
     as.numeric(input[y > 0 & y < max_tresh]) ~ as.numeric(y[y > 0 & y < max_tresh])
   )
@@ -246,11 +247,11 @@
 
 ## disc model ##
 .CytSeg <- function(nmask,
-                   image,
-                   sizeSelection = 5,
-                   smooth = 1,
-                   discSize = 3,
-                   transform = NULL) {
+                    image,
+                    sizeSelection = 5,
+                    smooth = 1,
+                    discSize = 3,
+                    transform = NULL) {
   kern <- EBImage::makeBrush(discSize, shape = "disc")
 
   cell <- EBImage::dilate(nmask, kern)
@@ -262,11 +263,12 @@
     image <- .Transform(image, transform, isNuc = FALSE)
   }
 
-  longImage_disk <- data.frame(apply(
-    asinh(image),
-    3, as.vector
-  ),
-  disk = as.vector(disk)
+  longImage_disk <- data.frame(
+    apply(
+      asinh(image),
+      3, as.vector
+    ),
+    disk = as.vector(disk)
   )
 
   long_image_2 <- longImage_disk
@@ -297,12 +299,12 @@
 
 ## Cyt seg parallel ##
 .cytSegParallel <- function(nmask,
-                           image,
-                           sizeSelection = 5,
-                           smooth = 1,
-                           discSize = 3,
-                           transform = NULL,
-                           BPPARAM = BiocParallel::SerialParam()) {
+                            image,
+                            sizeSelection = 5,
+                            smooth = 1,
+                            discSize = 3,
+                            transform = NULL,
+                            BPPARAM = BiocParallel::SerialParam()) {
   test.masks.cyt <- BiocParallel::bpmapply(.CytSeg,
     nmask,
     image,
@@ -318,11 +320,11 @@
 
 ## Marker Model ## Cyt segmentation based on a specified cytoplasmic marker ##
 .CytSeg2 <- function(nmask,
-                    image,
-                    channel = 2,
-                    sizeSelection = 5,
-                    smooth = 1,
-                    transform = c("maxThresh", "asinh")) {
+                     image,
+                     channel = 2,
+                     sizeSelection = 5,
+                     smooth = 1,
+                     transform = c("maxThresh", "asinh")) {
   cytpred <- EBImage::Image(apply(image[, , channel], c(1, 2), mean))
 
   if (is.null(transform) == FALSE) {
@@ -364,12 +366,12 @@
 
 ## Marker model Parallel ##
 .cytSeg2Parallel <- function(nmask,
-                            image,
-                            channel = 2,
-                            sizeSelection = 5,
-                            smooth = 1,
-                            transform = c("maxThresh", "asinh"),
-                            BPPARAM = BiocParallel::SerialParam()) {
+                             image,
+                             channel = 2,
+                             sizeSelection = 5,
+                             smooth = 1,
+                             transform = c("maxThresh", "asinh"),
+                             BPPARAM = BiocParallel::SerialParam()) {
   test.masks.cyt <-
     BiocParallel::bpmapply(.CytSeg2,
       nmask,

@@ -5,10 +5,12 @@
 simpleSeg.Rproj
 
 
-*.html
 simpleSeg.BiocCheck/00BiocCheck.log
 tests/testthat/testthat-problems.rds
 /doc/
 /Meta/
 .vscode
 test.r
+prof_*
+
+debug
