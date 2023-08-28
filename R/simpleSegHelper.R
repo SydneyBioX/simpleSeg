@@ -160,7 +160,7 @@
 
     # subsample
     # if there are more than 100k pixels, sample 100k for PCA (currently OFF)
-    if (length(use) > 1e5L) use <- sample(which(use), min(1e5L, length(use)))
+    if (length(which(use)) > 1e5L) use <- sample(which(use), min(1e5L, length(use)))
 
     useMarker <- apply(image.long, 2, sd) > 0
     pca <- prcomp(image.long[use, useMarker], scale = TRUE)
