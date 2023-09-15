@@ -200,7 +200,7 @@ simpleSeg <- function(image,
 
   x <- runif(1) # nolint
 
-  if (is.integer(cores)) {
+  if (is.numeric(cores)) {
     BPPARAM <- generateBPParam(cores)
   } else if (attr(class(cores), "package") == "BiocParallel") {
     BPPARAM <- cores
