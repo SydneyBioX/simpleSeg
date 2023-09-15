@@ -6,6 +6,8 @@
 generateBPParam <- function(cores = 1) {
   seed <- .Random.seed[1]
 
+  if (!is.integer(cores)) as.integer(cores)
+
   if (cores == 1) {
     BPparam <- BiocParallel::SerialParam(RNGseed = seed)
   } else { ## Parallel processing is desired.
