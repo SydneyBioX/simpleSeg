@@ -87,7 +87,19 @@ normalizeCells <- function(cells,
     for (i in seq_along(transformation)) {
       cells[, markers] <- switch(transformation[i],
         "asinh" = asinh(cells[, markers]),
-        "sqrt" = sqrt(cells[, markers])
+        "sqrt" = {
+          if (min(cells[, markers]) < 0) {
+            stop(paste0(
+                "Can't use `sqrt` normailastion on negative markers.",
+                " Consider using `asinh`."
+            ))
+          }
+          sqrt(cells[, markers])
+        },
+        stop(paste0(
+          "`",transformation[i],"` is not a valid transformation. ",
+          "Choose one of: `sqrt`, `asinh`"
+       ))
       )
     }
   }
@@ -98,7 +110,11 @@ normalizeCells <- function(cells,
         "mean" = meandiv(cells, markers, imageID),
         "minMax" = minMax(cells, markers, imageID),
         "trim99" = trim99(cells, markers, imageID),
-        "PC1" = PC1(cells, markers, imageID)
+        "PC1" = PC1(cells, markers, imageID),
+        stop(paste0(
+          "`",method[i],"` is not a valid method. ",
+          "Choose one of: `mean`, `minMax`, `trim99` or `PC1`"
+          ))
       )
     }
   }
