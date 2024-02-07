@@ -137,7 +137,7 @@ simpleSeg <- function(image,
     )
   }
   # cellBody input validation
-  valid_cellbody <- c("none", "dilate", "discModel")
+  valid_cellbody <- c("none", "dilate", "discModel", dimnames(image[[1]])[[3]])
   if (!(cellBody %in% valid_cellbody)) {
     # Throw informative error message.
     stop(
