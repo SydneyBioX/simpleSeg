@@ -321,13 +321,14 @@ simpleSeg <- function(image,
       transform = transform,
       BPPARAM = BPPARAM
     )
-
+  
     # Converting from a tiff stack to individual images
     cellList <- NULL
-    for (i in seq_along(cells[1, 1, ])) {
-      cellList[[i]] <- as.Image(cells[, , i])
+    
+    for (i in seq_along(cells)) {
+      cellList[[names(cells)[i]]] <- cells[[i]]
     }
-
+    
     cyto.mask <- cytomapper::CytoImageList(cellList)
 
     if (is.null(names(image))) {

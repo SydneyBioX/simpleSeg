@@ -337,13 +337,11 @@
 
   cytpredsmooth <- EBImage::gblur(cytpred, sigma = smooth)
 
-
   longImage <- data.frame(apply(asinh(image), 3, as.vector),
     cytpredsmooth = as.vector(cytpredsmooth)
   )
   fit <- lm(cytpredsmooth ~ ., longImage)
   ## using all the other variables (staining channels) to predict cytpred
-
   cytpredpred <- cytpred
   cytpredpred[] <- terra::predict(fit, longImage)
   cytpredpred <- cytpredpred - min(cytpredpred)
@@ -351,17 +349,16 @@
 
   cellTh <- EBImage::otsu(cytpredpred, range = c(0, 1))
   cell <- cytpredpred > cellTh
-
   cell <- cell + nmask > 0
 
   nuc_label <- EBImage::bwlabel(nmask)
   tnuc <- table(nuc_label)
   nmask[nuc_label %in% names(which(tnuc <= sizeSelection))] <- 0
 
-
   cmask4 <- EBImage::propagate(cytpredpred, nmask, cell)
 
   return(EBImage::Image(cmask4))
+
 }
 
 ## Marker model Parallel ##
