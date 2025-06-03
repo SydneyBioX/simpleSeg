@@ -21,7 +21,7 @@
       sizeSelection
     ) ## separate tissue from background
 
-    image <- EBImage::Image(sweep(image, c(1, 2), tissueMask, "*"))
+    image <- EBImage::Image(sweep(as.array(image), c(1, 2), tissueMask, "*"))
   }
 
 
