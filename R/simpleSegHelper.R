@@ -33,7 +33,9 @@
   nuc <- .prepNucSignal(image, nucleusIndex, smooth, pca, discSize)
 
   ## Segment Nuclei
-  nth <- EBImage::otsu(nuc, range = range(nuc))
+  rang <- range(nuc)
+  rang[1] <- max(rang[1],0.0001)
+  nth <- EBImage::otsu(nuc, range = rang)
   ## threshold on the sqrt intensities works better.
 
   nMask <- nuc > nth
