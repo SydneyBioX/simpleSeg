@@ -17,7 +17,8 @@
   if ("tissueMask" %in% transform) { ## calculate tissue mask
     tissueMask <- .calcTissueMask(
       image,
-      tissueIndex
+      tissueIndex,
+      sizeSelection
     ) ## separate tissue from background
 
     image <- EBImage::Image(sweep(image, c(1, 2), tissueMask, "*"))
