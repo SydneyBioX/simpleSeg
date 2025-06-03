@@ -39,29 +39,29 @@
   tissue_label <- EBImage::bwlabel(tissue)
   ttissue <- table(tissue_label)
   tissue[tissue_label %in% names(which(ttissue <= size_selection))] <- 0
-
+  tissueMask <- tissue
   ## extract the convex hull
-  nonZero <- as.data.frame(which(tissue > 0, arr.ind = TRUE))
-  colnames(nonZero) <- c("y", "x")
+#  nonZero <- as.data.frame(which(tissue > 0, arr.ind = TRUE))
+#  colnames(nonZero) <- c("y", "x")
 
-  ch <- grDevices::chull(nonZero[, c("x", "y")])
-  poly <- nonZero[, c("x", "y")][rev(ch), ]
-  colnames(poly) <- c("x", "y")
+#  ch <- grDevices::chull(nonZero[, c("x", "y")])
+#  poly <- nonZero[, c("x", "y")][rev(ch), ]
+#  colnames(poly) <- c("x", "y")
 
-  ow <- spatstat.geom::owin(
-    xrange = range(nonZero$x),
-    yrange = range(nonZero$y),
-    poly = poly
-  )
+#  ow <- spatstat.geom::owin(
+#    xrange = range(nonZero$x),
+#    yrange = range(nonZero$y),
+#    poly = poly
+#  )
 
-  tissueMask <- as.matrix(
-    spatstat.geom::as.mask(ow,
-      xy = list(
-        y = seq_len(nrow(tissue)),
-        x = seq_len(ncol(tissue))
-      )
-    )
-  )
+#  tissueMask <- as.matrix(
+#    spatstat.geom::as.mask(ow,
+#      xy = list(
+#        y = seq_len(nrow(tissue)),
+#        x = seq_len(ncol(tissue))
+#      )
+#    )
+#  )
   ## this is all the points inside the convex hull
 
   return(tissueMask)
