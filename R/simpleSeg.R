@@ -56,7 +56,6 @@
 #'
 #' @export simpleSeg
 #' @rdname simpleSeg
-#' @importFrom BiocParallel bpnworkers
 #' @importFrom EBImage gblur otsu bwlabel makeBrush watershed dilate distmap propagate Image
 #' @importFrom cytomapper CytoImageList
 #' @importFrom stats prcomp quantile median sd .lm.fit
@@ -151,7 +150,7 @@ simpleSeg <- function(image,
     )
   }
 
-  cores <- .nWorkers(cores)
+  .nWorkers(cores)
 
   ## Each image has its own random number stream (used by the PCA subsample).
   x <- runif(1) # nolint

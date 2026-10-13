@@ -125,7 +125,7 @@ test_that("a single image works with a cell body marker", {
 
 test_that("nucleus can be given by position", {
   images <- crop_data()
-  pos <- match("HH3", channelNames(images))
+  pos <- match("HH3", cytomapper::channelNames(images))
   expect_identical(
     as.list(simpleSeg(images, nucleus = pos)),
     as.list(simpleSeg(images, nucleus = "HH3"))

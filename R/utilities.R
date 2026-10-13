@@ -11,27 +11,77 @@
   )
 }
 
-## lapply() over `cores` forked workers (parallel::mclapply), forked once per
-## call; sequential with one core or on Windows. BLAS runs one thread per
-## worker: a multithreaded OpenBLAS would otherwise start its full thread pool
-## in every forked worker.
-#' @importFrom parallel mclapply
-.parLapply <- function(X, FUN, ..., cores = 1L) {
-  if (cores > 1L && .Platform$OS.type != "windows" && length(X) > 1L) {
-    if (requireNamespace("RhpcBLASctl", quietly = TRUE)) {
-      blasThreads <- RhpcBLASctl::blas_get_num_procs()
-      RhpcBLASctl::blas_set_num_threads(1)
-      on.exit(RhpcBLASctl::blas_set_num_threads(blasThreads), add = TRUE)
-    }
-    out <- parallel::mclapply(X, FUN, ...,
-      mc.cores = min(cores, length(X)),
-      mc.preschedule = FALSE
-    )
-    bad <- vapply(out, inherits, logical(1), what = "try-error")
-    if (any(bad)) stop(attr(out[[which(bad)[1]]], "condition"))
-    out
+## A BiocParallel param for `cores` workers: forked workers (MulticoreParam),
+## or socket workers (SnowParam) on Windows. A param object is returned
+## unchanged.
+.bpparam <- function(cores = 1L) {
+  if (is(cores, "BiocParallelParam")) return(cores)
+  cores <- .nWorkers(cores)
+  if (cores <= 1L) return(BiocParallel::SerialParam())
+  if (.Platform$OS.type == "windows") {
+    BiocParallel::SnowParam(cores)
   } else {
-    lapply(X, FUN, ...)
+    BiocParallel::MulticoreParam(cores)
+  }
+}
+
+## The task function and elements of the current .parLapply() call, found by
+## forked workers in their copy of this environment.
+.parallelEnv <- new.env(parent = emptyenv())
+.runTask <- function(i) .parallelEnv$task(.parallelEnv$X[[i]])
+
+## lapply(X, FUN) over the workers of `cores` (a number or a BiocParallel
+## param).
+## - Forked workers start once, after the task exists, so they share the
+##   session's data without being sent it, and only task numbers and results
+##   pass between processes.
+## - BLAS runs one thread in each worker during the call. OpenBLAS otherwise
+##   starts one thread per core in every worker. The setting is changed in this
+##   session before the workers start, because changing it inside a worker
+##   first restarts every thread.
+## - Tasks are handed out in up to eight chunks per worker, so that quick and
+##   slow tasks balance out.
+#' @importFrom BiocParallel bpnworkers bpisup bplapply bptasks bptasks<- bpstart bpstop
+.parLapply <- function(X, FUN, cores = 1L) {
+  BPPARAM <- .bpparam(cores)
+  workers <- BiocParallel::bpnworkers(BPPARAM)
+  if (workers <= 1L || length(X) <= 1L) return(lapply(X, FUN))
+
+  blasThreads <- RhpcBLASctl::blas_get_num_procs()
+  RhpcBLASctl::blas_set_num_threads(1L)
+  on.exit(RhpcBLASctl::blas_set_num_threads(blasThreads), add = TRUE)
+  if (BiocParallel::bpisup(BPPARAM) || !is(BPPARAM, "MulticoreParam")) {
+    # Workers that are already running, or are new R sessions, are sent the
+    # task with each chunk.
+    threadVars <- Sys.getenv(c("OPENBLAS_NUM_THREADS", "OMP_NUM_THREADS"), unset = NA)
+    Sys.setenv(OPENBLAS_NUM_THREADS = 1L, OMP_NUM_THREADS = 1L)
+    on.exit(.restoreEnv(threadVars), add = TRUE)
+    return(BiocParallel::bplapply(X, FUN, BPPARAM = BPPARAM))
+  }
+
+  assign("task", FUN, envir = .parallelEnv)
+  assign("X", X, envir = .parallelEnv)
+  on.exit(rm(list = c("task", "X"), envir = .parallelEnv), add = TRUE)
+  tasks <- BiocParallel::bptasks(BPPARAM)
+  if (tasks == 0L) {
+    BiocParallel::bptasks(BPPARAM) <- min(length(X), 8L * workers)
+    on.exit(BiocParallel::bptasks(BPPARAM) <- tasks, add = TRUE, after = FALSE)
+  }
+  BiocParallel::bpstart(BPPARAM)
+  on.exit(BiocParallel::bpstop(BPPARAM), add = TRUE, after = FALSE)
+  out <- BiocParallel::bplapply(seq_along(X), .runTask, BPPARAM = BPPARAM)
+  names(out) <- names(X)
+  out
+}
+
+## Put environment variables back as they were (NA: unset).
+.restoreEnv <- function(values) {
+  for (name in names(values)) {
+    if (is.na(values[[name]])) {
+      Sys.unsetenv(name)
+    } else {
+      do.call(Sys.setenv, as.list(values[name]))
+    }
   }
 }
 

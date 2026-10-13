@@ -37,7 +37,7 @@ Changes in version 1.15.1 (2026-10-14):
 + Faster segmentation with lower memory use: each image is processed once in
   one task, on plain arrays, with fitted values from one QR fit. Masks are
   unchanged.
-+ Parallel processing forks the workers once per call and gives every image
-  its own random number stream, so masks do not depend on the number of
-  cores. BLAS uses one thread per worker when RhpcBLASctl is installed.
++ Parallel processing starts the BiocParallel workers once per call, runs
+  BLAS with one thread per worker, and gives every image its own random
+  number stream, so masks do not depend on the number of cores.
 + terra, spatstat.geom and grDevices are no longer imported.
