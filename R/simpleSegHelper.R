@@ -1,7 +1,75 @@
-#' @importFrom EBImage Image abind
+#' @importFrom EBImage Image
 #' @importFrom methods is
 #' @importFrom stats coef cor median resid runif sd
+NULL
+
+## Segment one image: nuclei, then (optionally) the cell bodies.
+.segmentImage <- function(image,
+                          name = "image",
+                          nucleusIndex = 1,
+                          cellBody = "dilate",
+                          useCellMarkers = FALSE,
+                          sizeSelection = 10,
+                          smooth = 1,
+                          tolerance = NULL,
+                          watershed = "intensity",
+                          ext = 1,
+                          discSize = 3,
+                          transform = NULL,
+                          tissueIndex = NULL,
+                          pca = FALSE) {
+  ## Plain arrays: subsetting and arithmetic on Image objects copy the whole
+  ## image through S4 methods.
+  image <- as.array(image)
+  cellModel <- useCellMarkers || cellBody == "discModel"
+  ## The tissue mask only applies to the nucleus signal; the cell body models
+  ## use the transformed image without it.
+  if ("tissueMask" %in% transform) {
+    tissueMask <- .calcTissueMask(image, tissueIndex, sizeSelection)
+    nucImage <- .Transform(image * as.vector(tissueMask), transform)
+    timage <- if (cellModel) .Transform(image, transform)
+  } else {
+    timage <- if (is.null(transform)) image else .Transform(image, transform)
+    nucImage <- timage
+  }
+  if (!cellModel) rm(timage)
+  if (!useCellMarkers) rm(image)
+
+  nmask <- .nucSeg(nucImage,
+    name = name,
+    nucleusIndex = nucleusIndex,
+    sizeSelection = sizeSelection,
+    smooth = smooth,
+    tolerance = tolerance,
+    watershed = watershed,
+    ext = ext,
+    discSize = discSize,
+    wholeCell = !useCellMarkers && cellBody == "dilate",
+    pca = pca
+  )
+  rm(nucImage)
+  if (!any(nmask > 0)) {
+    return(EBImage::Image(nmask))
+  }
+
+  if (useCellMarkers) {
+    return(.CytSeg2(nmask, image, timage,
+      channel = cellBody,
+      sizeSelection = sizeSelection,
+      smooth = smooth
+    ))
+  }
+  if (cellBody == "discModel") {
+    return(.CytSeg(nmask, timage,
+      sizeSelection = sizeSelection,
+      discSize = discSize
+    ))
+  }
+  EBImage::Image(nmask)
+}
+
 .nucSeg <- function(image,
+                    name = "image",
                     nucleusIndex = 1,
                     sizeSelection = 10,
                     smooth = 1,
@@ -10,43 +78,29 @@
                     ext = 1,
                     discSize = 3,
                     wholeCell = TRUE,
-                    transform = NULL,
-                    tissueIndex = NULL,
                     pca = FALSE) {
-  ## Prepare matrix use to segment nuclei
-  if ("tissueMask" %in% transform) { ## calculate tissue mask
-    tissueMask <- .calcTissueMask(
-      image,
-      tissueIndex,
-      sizeSelection
-    ) ## separate tissue from background
-
-    image <- EBImage::Image(sweep(as.array(image), c(1, 2), tissueMask, "*"))
-  }
-
-
-
-  if (is.null(transform) == FALSE) {
-    image <- .Transform(image, transform, isNuc = FALSE)
-  }
-  # nmask
   nuc <- .prepNucSignal(image, nucleusIndex, smooth, pca, discSize)
+  rm(image)
 
   ## Segment Nuclei
-  nuc[nuc<0.0001] <- NA
-  nth <- EBImage::otsu(nuc, range = range(nuc,na.rm = TRUE))
+  nuc[nuc < 0.0001] <- NA
+  if (all(is.na(nuc))) {
+    return(.noNuclei(nuc, name))
+  }
+  nth <- EBImage::otsu(nuc, range = range(nuc, na.rm = TRUE))
   nuc[is.na(nuc)] <- 0
-  ## threshold on the sqrt intensities works better.
-  
 
   nMask <- nuc > nth
-  ## the threshold is squared to adjust of the sqrt previously.
 
   ## Size Selection
   nMaskLabel <- EBImage::bwlabel(nMask * 1)
-  tabNuc <- table(nMaskLabel)
-  nMask[nMaskLabel %in% names(which(tabNuc <= sizeSelection))] <- 0
-  nMaskLabel[nMaskLabel %in% names(which(tabNuc <= sizeSelection))] <- 0
+  small <- .smallObjects(nMaskLabel, sizeSelection)
+  nMask[small] <- 0
+  nMaskLabel[small] <- 0
+
+  if (!any(nMask > 0)) {
+    return(.noNuclei(nuc, name))
+  }
 
   if (watershed == "distance") {
     if (is.null(tolerance)) tolerance <- 1
@@ -63,16 +117,14 @@
 
   if (watershed == "combine") {
     ## Scale cell intensities
-    avg <- tapply(nuc, nMaskLabel, mean)
-    AVG <- nMask
-    AVG[] <- avg[as.character(nMaskLabel)]
+    AVG <- .labelMeans(nuc, nMaskLabel)
     nuc <- (nuc / AVG) * nMask
-    nuc <- nuc / median(avg[as.character(nMaskLabel)]) * nMask
+    nuc <- nuc / median(AVG) * nMask
 
     dist <- EBImage::distmap(nMask)
 
     if (is.null(tolerance)) {
-      tolerance <- .estimateTolerance(dist * nuc, nMask, discSize = discSize)
+      tolerance <- .estimateTolerance(dist * nuc, dist, discSize = discSize)
     }
 
     wMask <- EBImage::watershed(dist * nuc, tolerance = tolerance, ext = ext)
@@ -88,14 +140,13 @@
   # intensity watershedding
 
   if (is.null(tolerance)) {
-    tolerance <- .estimateTolerance(nuc, nMask, discSize)
+    tolerance <- .estimateTolerance(nuc, EBImage::distmap(nMask), discSize)
   }
 
   wMask <- EBImage::watershed(nuc * nMask, tolerance = tolerance, ext = ext)
 
   ## Size Selection
-  tabNuc <- table(wMask)
-  wMask[wMask %in% names(which(tabNuc <= sizeSelection))] <- 0
+  wMask[.smallObjects(wMask, sizeSelection)] <- 0
 
   if (wholeCell) {
     kern <- EBImage::makeBrush(discSize, shape = "disc")
@@ -105,53 +156,61 @@
   wMask
 }
 
-.nucSegParallel <- function(image,
-                            nucleusIndex = 1,
-                            sizeSelection = 10,
-                            smooth = 1,
-                            tolerance = 0.01,
-                            ext = 1,
-                            discSize = 3,
-                            wholeCell = TRUE,
-                            watershed = "combine",
-                            transform = NULL,
-                            tissueIndex = NULL,
-                            pca = FALSE,
-                            BPPARAM = BiocParallel::SerialParam()) {
-  output <- BiocParallel::bplapply(image,
-    .nucSeg,
-    nucleusIndex = nucleusIndex,
-    tolerance = tolerance,
-    watershed = watershed,
-    ext = ext,
-    discSize = discSize,
-    sizeSelection = sizeSelection,
-    smooth = smooth,
-    wholeCell = wholeCell,
-    transform = transform,
-    tissueIndex = tissueIndex,
-    pca = pca,
-    BPPARAM = BPPARAM
+## An empty mask, with a warning, for an image where no nuclei pass the
+## threshold and size selection.
+.noNuclei <- function(nuc, name) {
+  warning(
+    "No nuclei found in image '", name, "'; its mask is empty. ",
+    "If a few very bright pixels dominate the nucleus marker, try ",
+    "transform = \"sqrt\", \"asinh\" or \"norm99\".",
+    call. = FALSE
   )
+  matrix(0, nrow(nuc), ncol(nuc))
+}
+
+## Pixels of a label image whose object has at most `size` pixels.
+.smallObjects <- function(label, size) {
+  lab <- as.integer(label)
+  counts <- tabulate(lab + 1L, nbins = max(lab, 0L) + 1L)
+  (counts <= size)[lab + 1L]
+}
+
+## Each pixel's mean intensity over its label (background included as label 0).
+.labelMeans <- function(x, label) {
+  lab <- as.integer(label)
+  avg <- vapply(split(as.numeric(x), lab), mean, numeric(1))
+  full <- numeric(max(lab, 0L) + 1L)
+  full[as.integer(names(avg)) + 1L] <- avg
+  out <- label
+  out[] <- full[lab + 1L]
+  out
 }
 
 .prepNucSignal <- function(image, nucleusIndex, smooth, pca, discSize) {
   if (pca) {
-    image <- apply(image, 3, function(x) {
-      x <- (x)
-      EBImage::gblur(x, smooth)
-    }, simplify = FALSE)
+    ## Smoothed pixels x channels matrix, built in place.
+    d <- dim(image)
+    image.long <- matrix(0, d[1] * d[2], d[3],
+      dimnames = list(NULL, dimnames(image)[[3]])
+    )
+    for (j in seq_len(d[3])) {
+      image.long[, j] <- EBImage::gblur(image[, , j], smooth)
+    }
+    rm(image)
 
-    image <- EBImage::abind(image, along = 3)
-    image.long <- apply(image, 3, as.numeric)
+    ind <- if (is.character(nucleusIndex)) {
+      intersect(nucleusIndex, colnames(image.long))
+    } else {
+      nucleusIndex
+    }
 
-    # TODO: This should be somewhere in input validation, not here.
-    ind <- intersect(nucleusIndex, colnames(image.long))
-
-    image_nucleus <- image[, , ind]
-
-    # if there is more than one nucluear marker, average them
-    if (length(ind) > 1) image_nucleus <- apply(image_nucleus, c(1, 2), mean)
+    # if there is more than one nuclear marker, average them
+    image_nucleus <- if (length(ind) > 1) {
+      rowMeans(image.long[, ind, drop = FALSE])
+    } else {
+      image.long[, ind]
+    }
+    dim(image_nucleus) <- d[1:2]
 
     otsu_thresh <- EBImage::otsu(image_nucleus, range = range(image_nucleus))
 
@@ -162,11 +221,10 @@
 
     use <- as.vector(cell)
 
-    # subsample
-    # if there are more than 100k pixels, sample 100k for PCA (currently OFF)
+    # subsample: use at most 100k pixels for the PCA
     if (length(which(use)) > 1e5L) use <- sample(which(use), min(1e5L, length(use)))
 
-    useMarker <- apply(image.long, 2, sd) > 0
+    useMarker <- vapply(seq_len(d[3]), function(j) sd(image.long[, j]), numeric(1)) > 0
     pca <- prcomp(image.long[use, useMarker], scale = TRUE)
 
     usePC <- which.max(abs(
@@ -180,107 +238,93 @@
       PC, image_nucleus[use]
     ))
 
-    imagePC <- image.long[, useMarker] %*% (pca$rotation[, usePC] * PC_sign)
+    if (!all(useMarker)) image.long <- image.long[, useMarker]
+    imagePC <- image.long %*% (pca$rotation[, usePC] * PC_sign)
     imagePC <- imagePC - min(imagePC)
-    dim(imagePC) <- dim(image)[1:2]
+    dim(imagePC) <- d[1:2]
 
     return(imagePC)
   }
 
-  if (is(nucleusIndex, "character")) {
-    ind <- intersect(nucleusIndex, dimnames(image)[[3]])
+  nuc <- if (length(nucleusIndex) > 1) {
+    rowMeans(image[, , nucleusIndex, drop = FALSE], dims = 2)
+  } else {
+    image[, , nucleusIndex]
   }
-
-  nuc <- image[, , ind]
-  if (length(ind) > 1) nuc <- apply(nuc, c(1, 2), mean)
   nuc <- EBImage::gblur(nuc, smooth)
 
   return(nuc - min(nuc))
 }
 
-.estimateTolerance <- function(input, nMask, discSize) {
-  y <- EBImage::distmap(nMask)
+## Slope of `input` on the distance to the nucleus edge, near the edge.
+## Same QR fit as lm(), without building a model frame.
+.estimateTolerance <- function(input, dist, discSize) {
   max_tresh <- max(3, 3 * discSize)
-  fit <- lm(
-    as.numeric(input[y > 0 & y < max_tresh]) ~ as.numeric(y[y > 0 & y < max_tresh])
-  )
-  tolerance <- coef(fit)[2]
-  tolerance
+  near <- dist > 0 & dist < max_tresh
+  y <- as.numeric(input[near])
+  x <- as.numeric(dist[near])
+  fit <- .lm.fit(cbind(1, x), y)
+  fit$coefficients[2]
 }
 
-.Transform <- function(image, transform, isNuc) {
-  if (isNuc) {
-    for (i in seq_along(transform)) {
-      image <- switch(transform[i],
-        "norm99" = .norm99(image),
-        "asinh" = asinh(image),
-        "maxThresh" = image / max(image, na.rm = TRUE),
-        "sqrt" = sqrt(image),
-        "tissueMask" = image
-      )
-    }
-    return(image)
-  } else {
-    for (i in seq_along(transform)) {
-      image <- switch(transform[i],
-        "norm99" = .norm99(image),
-        "asinh" = asinh(image),
-        "maxThresh" = .maxThresh(image),
-        "sqrt" = sqrt(image),
-        "tissueMask" = image
-      )
-    }
-
-    return(image)
+.Transform <- function(image, transform) {
+  for (i in seq_along(transform)) {
+    image <- switch(transform[i],
+      "norm99" = .norm99(image),
+      "asinh" = asinh(image),
+      "maxThresh" = .maxThresh(image),
+      "sqrt" = sqrt(image),
+      "tissueMask" = image
+    )
   }
+  image
 }
 
 .norm99 <- function(nuc) {
-  nuc[nuc > quantile(nuc, 0.99, na.rm = TRUE)] <- quantile(nuc, 0.99, na.rm = TRUE)
+  q <- quantile(nuc, 0.99, na.rm = TRUE)
+  nuc[nuc > q] <- q
   return(nuc)
 }
 
 .maxThresh <- function(image) {
-  for (i in 1:dim(image)[3]) {
-    if (max(image[, , i]) > 0) {
-      image[, , i] <- image[, , i] / max(image[, , i])
-    }
+  m <- apply(image, 3, max)
+  m[!(m > 0)] <- 1
+  image / rep(m, each = prod(dim(image)[1:2]))
+}
+
+## Fitted values of a linear model of `y` on the asinh of every channel, the
+## same numbers as predict(lm(y ~ ., data)) without the model frame copies.
+.channelModel <- function(image, y) {
+  d <- dim(image)
+  X <- asinh(image)
+  dim(X) <- c(d[1] * d[2], d[3])
+  y <- as.numeric(y)
+  if (anyNA(X) || anyNA(y)) {
+    ## lm() drops incomplete pixels; keep its behaviour exactly.
+    data <- data.frame(X, y = y)
+    return(stats::predict(stats::lm(y ~ ., data = data), data))
   }
-  return(image)
+  X <- cbind(1, X)
+  fit <- .lm.fit(X, y)
+  r <- seq_len(fit$rank)
+  piv <- fit$pivot[r]
+  drop(X[, piv, drop = FALSE] %*% fit$coefficients[r])
 }
 
 ## disc model ##
 .CytSeg <- function(nmask,
                     image,
                     sizeSelection = 5,
-                    smooth = 1,
-                    discSize = 3,
-                    transform = NULL) {
+                    discSize = 3) {
   kern <- EBImage::makeBrush(discSize, shape = "disc")
 
   cell <- EBImage::dilate(nmask, kern)
 
   disk <- cell - nmask > 0
 
-  ## normalization
-  if (is.null(transform) == FALSE) {
-    image <- .Transform(image, transform, isNuc = FALSE)
-  }
-
-  longImage_disk <- data.frame(
-    apply(
-      asinh(image),
-      3, as.vector
-    ),
-    disk = as.vector(disk)
-  )
-
-  long_image_2 <- longImage_disk
-
-  fit <- lm(disk ~ . - disk, data = long_image_2)
-
   cytpred <- nmask
-  cytpred[] <- terra::predict(fit, longImage_disk)
+  cytpred[] <- .channelModel(image, disk)
+  rm(image)
   cytpred <- cytpred - min(cytpred)
   cytpred <- cytpred / max(cytpred)
 
@@ -289,65 +333,32 @@
 
   cell <- cell + nmask > 0
 
-  nuc_label <- EBImage::bwlabel(nmask)
-  tnuc <- table(nuc_label)
-  nmask[nuc_label %in% names(which(tnuc <= sizeSelection))] <- 0
-
+  nmask[.smallObjects(EBImage::bwlabel(nmask), sizeSelection)] <- 0
 
   cmask4 <- EBImage::propagate(cytpred, nmask, cell)
-  justdisk <- EBImage::propagate(disk, nmask, cell)
-
 
   return(EBImage::Image(cmask4))
 }
 
-## Cyt seg parallel ##
-.cytSegParallel <- function(nmask,
-                            image,
-                            sizeSelection = 5,
-                            smooth = 1,
-                            discSize = 3,
-                            transform = NULL,
-                            BPPARAM = BiocParallel::SerialParam()) {
-  test.masks.cyt <- BiocParallel::bpmapply(.CytSeg,
-    nmask,
-    image,
-    MoreArgs = list(
-      sizeSelection = sizeSelection,
-      smooth = smooth,
-      discSize = discSize,
-      transform = transform
-    ),
-    BPPARAM = BPPARAM
-  )
-}
-
 ## Marker Model ## Cyt segmentation based on a specified cytoplasmic marker ##
+## `image` is the raw image (the marker signal); `timage` the transformed one.
 .CytSeg2 <- function(nmask,
                      image,
+                     timage,
                      channel = 2,
                      sizeSelection = 5,
-                     smooth = 1,
-                     transform = c("maxThresh", "asinh")) {
-  cytpred <- EBImage::Image(apply(image[, , channel], c(1, 2), mean))
-
-  if (is.null(transform) == FALSE) {
-    image <- .Transform(image,
-      transform,
-      isNuc = FALSE
-    )
-  }
-
+                     smooth = 1) {
+  cytpred <- EBImage::Image(
+    rowMeans(image[, , channel, drop = FALSE], dims = 2)
+  )
+  rm(image)
 
   cytpredsmooth <- EBImage::gblur(cytpred, sigma = smooth)
 
-  longImage <- data.frame(apply(asinh(image), 3, as.vector),
-    cytpredsmooth = as.vector(cytpredsmooth)
-  )
-  fit <- lm(cytpredsmooth ~ ., longImage)
-  ## using all the other variables (staining channels) to predict cytpred
+  ## using all the staining channels to predict the smoothed marker
   cytpredpred <- cytpred
-  cytpredpred[] <- terra::predict(fit, longImage)
+  cytpredpred[] <- .channelModel(timage, cytpredsmooth)
+  rm(timage)
   cytpredpred <- cytpredpred - min(cytpredpred)
   cytpredpred <- cytpredpred / max(cytpredpred)
 
@@ -355,34 +366,9 @@
   cell <- cytpredpred > cellTh
   cell <- cell + nmask > 0
 
-  nuc_label <- EBImage::bwlabel(nmask)
-  tnuc <- table(nuc_label)
-  nmask[nuc_label %in% names(which(tnuc <= sizeSelection))] <- 0
+  nmask[.smallObjects(EBImage::bwlabel(nmask), sizeSelection)] <- 0
 
   cmask4 <- EBImage::propagate(cytpredpred, nmask, cell)
 
   return(EBImage::Image(cmask4))
-
-}
-
-## Marker model Parallel ##
-.cytSeg2Parallel <- function(nmask,
-                             image,
-                             channel = 2,
-                             sizeSelection = 5,
-                             smooth = 1,
-                             transform = c("maxThresh", "asinh"),
-                             BPPARAM = BiocParallel::SerialParam()) {
-  test.masks.cyt <-
-    BiocParallel::bpmapply(.CytSeg2,
-      nmask,
-      image,
-      MoreArgs = list(
-        channel = channel,
-        sizeSelection = sizeSelection,
-        smooth = smooth,
-        transform = transform
-      ),
-      BPPARAM = BPPARAM
-    )
 }

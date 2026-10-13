@@ -56,11 +56,10 @@
 #'
 #' @export simpleSeg
 #' @rdname simpleSeg
-#' @importFrom BiocParallel SerialParam bplapply MulticoreParam bpmapply
-#' @importFrom EBImage gblur otsu bwlabel makeBrush filter2 watershed dilate distmap propagate Image as.Image
-#' @importFrom terra predict
+#' @importFrom BiocParallel bpnworkers
+#' @importFrom EBImage gblur otsu bwlabel makeBrush watershed dilate distmap propagate Image
 #' @importFrom cytomapper CytoImageList
-#' @importFrom stats prcomp quantile lm coef cor median resid runif sd
+#' @importFrom stats prcomp quantile median sd .lm.fit
 #' @importFrom S4Vectors mcols mcols<-
 #' @importFrom methods is
 simpleSeg <- function(image,
@@ -76,6 +75,18 @@ simpleSeg <- function(image,
                       tissue = NULL,
                       pca = FALSE,
                       cores = 1) {
+  if (!is(image, "list") && !is(image, "CytoImageList")) {
+    image <- list(image = image)
+  }
+  if (length(image) == 0) stop("`image` contains no images.")
+  if (is.null(names(image))) {
+    names(image) <- as.character(seq_along(image))
+  }
+  channels <- dimnames(image[[1]])[[3]]
+  nChannels <- dim(image[[1]])[3]
+  if (is.na(nChannels)) {
+    stop("Each image must have a third dimension holding its channels.")
+  }
 
   if ("PCA" %in% nucleus) {
     if (length(nucleus) == 1) {
@@ -93,257 +104,113 @@ simpleSeg <- function(image,
     # remove PCA from nucleus markers
     nucleus <- nucleus[nucleus != "PCA"]
   }
-
-  #sizeSelection validation
-  if (!(sizeSelection > 0)) {
-    stop(
-      paste0(
-        sprintf(
-          "Invalid sizeSelection: '%s'. sizeSelection must be positive",
-          sizeSelection
-        )
-      )
-    )
+  nucleus <- .checkChannels(nucleus, channels, nChannels, "nucleus")
+  if (!is.null(tissue)) {
+    tissue <- .checkChannels(tissue, channels, nChannels, "tissue")
   }
-  if (!(smooth > 0)) {
+
+  .checkPositive(sizeSelection, "sizeSelection")
+  .checkPositive(smooth, "smooth")
+  .checkPositive(ext, "ext")
+  .checkPositive(discSize, "discSize")
+  if (!is.null(tolerance)) .checkPositive(tolerance, "tolerance")
+  if (!(isTRUE(pca) || isFALSE(pca))) stop("`pca` must be TRUE or FALSE.")
+
+  valid_watershed <- c("intensity", "distance", "combine")
+  if (!(length(watershed) == 1 && watershed %in% valid_watershed)) {
     stop(
-      paste0(
-        sprintf(
-          "Invalid smooth: '%s'. smooth must be positive",
-          smooth
-        )
-      )
+      sprintf("Invalid watershed: '%s'. Choose one of: ", paste(watershed, collapse = ", ")),
+      paste(valid_watershed, collapse = ", "), "."
     )
   }
 
-  if (!(ext > 0)) {
-    stop(
-      paste0(
-        sprintf(
-          "Invalid ext: '%s'. ext must be positive",
-          ext
-        )
-      )
-    )
-  }
-  if (!(discSize > 0)) {
-    stop(
-      paste0(
-        sprintf(
-          "Invalid discSize: '%s'. discSize must be positive",
-          discSize
-        )
-      )
-    )
-  }
   # cellBody input validation
   useCellMarkers <- FALSE
   valid_cellbody <- c("none", "dilate", "discModel")
-  if (!all(cellBody %in% valid_cellbody)) {
-    idx <- cellBody %in% dimnames(image[[1]])[[3]]
-    # if all elements of cellBody are markers
-    if (all(idx)) {
-      useCellMarkers <- TRUE
-    } else if (any(idx) || length(idx) > 1) { # if some are markers
-      if (sum(!idx) > 1) {
-        verb <- " are"
-        article <- ""
-        plural <- "s"
-      } else {
-        verb <- " is"
-        article <- " a"
-        plural <- ""
-      }
-      stop(
-        paste0(
-          paste(cellBody[!idx], collapse = ", "),
-          verb,
-          " not",
-          article,
-          " marker",
-          plural,
-          " included in the data.\n",
-          "Choose cell body markers from the following: ",
-          paste(dimnames(image[[1]])[[3]], collapse = ", "),
-          ".\n Alternatively, choose an approximation method (",
-          paste(valid_cellbody, collapse = ", "),
-          ")."
-        )
-      )
-    } else {
-      # Throw informative error message.
-      stop(
-        paste0(
-          sprintf(
-            "Invalid method of cytoplasm identification: '%s'. Must be ",
-            cellBody
-          ),
-          paste(valid_cellbody, collapse = ", "),
-          "or a list of one or more markers included in the data."
-        )
-      )
-    }
+  if (length(cellBody) == 1 && cellBody %in% valid_cellbody) {
+    # an approximation method
+  } else if (length(cellBody) > 0 && all(cellBody %in% channels)) {
+    useCellMarkers <- TRUE
+  } else {
+    missing <- setdiff(cellBody, channels)
+    stop(
+      "Invalid cellBody: '", paste(missing, collapse = "', '"), "'. ",
+      "Choose one of the methods ", paste(valid_cellbody, collapse = ", "),
+      ", or one or more cell body markers from: ",
+      paste(channels, collapse = ", "), "."
+    )
   }
 
   # transform input validation
-  valid_tansforms <- c("sqrt", "asinh", "norm99", "maxThresh", "tissueMask")
-  if (is.null(transform)) {
-
-  } else if (is.vector(transform)) {
-    dummy <- TRUE
-    for (element in transform) {
-      dummy <- (element %in% valid_tansforms) && dummy
-      if (!dummy) {
-        # Throw informative error message.
-        stop(
-          paste0(
-            sprintf(
-              "Transform list contains invalid transform: '%s'. ",
-              element
-            ),
-            paste(valid_tansforms, collapse = ", "),
-            "."
-          )
-        )
-      }
-    }
-  } else {
-    if (!(transform %in% c())) {
-      stop(
-        paste0(
-          sprintf("Invalid transform: '%s'. Choose from ", transform),
-          paste(valid_tansforms, collapse = ", "),
-          "."
-        )
-      )
-    }
+  valid_transforms <- c("sqrt", "asinh", "norm99", "maxThresh", "tissueMask")
+  bad <- setdiff(transform, valid_transforms)
+  if (length(bad) > 0) {
+    stop(
+      sprintf("Invalid transform: '%s'. ", paste(bad, collapse = "', '")),
+      "Choose from ", paste(valid_transforms, collapse = ", "), "."
+    )
   }
 
-  imageClass <- class(image)
+  cores <- .nWorkers(cores)
 
-  if (!imageClass %in% c("list", "CytoImageList")) {
-    image <- list(image)
-    names(image) <- "image"
-  }
-
-  wholeCell <- FALSE
-  if (!useCellMarkers && cellBody == "dilate") {
-    wholeCell <- TRUE
-  }
-
+  ## Each image has its own random number stream (used by the PCA subsample).
   x <- runif(1) # nolint
+  streams <- .rngStreams(length(image), .Random.seed[1])
 
-  if (is.numeric(cores)) {
-    BPPARAM <- generateBPParam(cores)
-  } else if (attr(class(cores), "package") == "BiocParallel") {
-    BPPARAM <- cores
-  } else {
-    stop("`cores` must be an integer or params generated by BiocParallel.")
-  }
-
-  nmask <- .nucSegParallel(image,
-    nucleusIndex = nucleus,
-    sizeSelection = sizeSelection,
-    smooth = smooth,
-    watershed = watershed,
-    tolerance = tolerance,
-    ext = ext,
-    wholeCell = wholeCell,
-    discSize = discSize,
-    transform = transform,
-    tissueIndex = tissue,
-    pca = pca,
-    BPPARAM = BPPARAM
-  )
-
-  # if dilate or none
-  if (!useCellMarkers && cellBody %in% c("dilate", "none")) {
-    nmask <- lapply(nmask, EBImage::Image)
-    cyto.nmask <- cytomapper::CytoImageList(nmask)
-
-    if (is.null(names(cyto.nmask))) {
-      names(cyto.nmask) <- c(seq_along(cyto.nmask))
-    }
-
-    if (is(image, "CytoImageList")) {
-      mcols(cyto.nmask) <- mcols(image)
-    }
-
-    S4Vectors::mcols(cyto.nmask)$imageID <- names(image)
-
-    objectNum <- as.list(vapply(cyto.nmask, max, numeric(1)))
-
-    mcols(cyto.nmask)$objectNum <- objectNum
-    return(cyto.nmask)
-  }
-
-  if (!useCellMarkers && cellBody == "discModel") {
-    cells <- .cytSegParallel(nmask,
-      image,
+  masks <- .parLapply(seq_along(image), function(i) {
+    .withStream(streams[[i]], .segmentImage(image[[i]],
+      name = names(image)[i],
+      nucleusIndex = nucleus,
+      cellBody = cellBody,
+      useCellMarkers = useCellMarkers,
       sizeSelection = sizeSelection,
       smooth = smooth,
+      tolerance = tolerance,
+      watershed = watershed,
+      ext = ext,
       discSize = discSize,
       transform = transform,
-      BPPARAM = BPPARAM
-    )
+      tissueIndex = tissue,
+      pca = pca
+    ))
+  }, cores = cores)
+  names(masks) <- names(image)
 
-    # Converting from a tiff stack to individual images
-    cellList <- NULL
+  cyto.mask <- cytomapper::CytoImageList(masks)
 
-#    for (i in seq_along(cells[1, 1, ])) {
-#      cellList[[i]] <- as.Image(cells[, , i])
-#    }
-
-    cyto.mask <- cytomapper::CytoImageList(cells)#List)
-
-    if (is.null(names(image))) {
-      names(image) <- c(seq_along(image))
-    }
-
-    if (is(image, "CytoImageList")) {
-      mcols(cyto.mask) <- mcols(image)
-    }
-
-    S4Vectors::mcols(cyto.mask)$imageID <- names(image)
-
-    objectNum <- as.list(vapply(cyto.mask, max, numeric(1)))
-
-    mcols(cyto.mask)$objectNum <- objectNum
-    return(cyto.mask)
+  if (is(image, "CytoImageList")) {
+    mcols(cyto.mask) <- mcols(image)
   }
 
-  if (useCellMarkers) {
-    cells <- .cytSeg2Parallel(nmask,
-      image,
-      channel = cellBody,
-      sizeSelection = sizeSelection,
-      smooth = smooth,
-      transform = transform,
-      BPPARAM = BPPARAM
+  S4Vectors::mcols(cyto.mask)$imageID <- names(image)
+
+  objectNum <- as.list(vapply(masks, max, numeric(1)))
+
+  mcols(cyto.mask)$objectNum <- objectNum
+  cyto.mask
+}
+
+## Channel names (or positions) that must exist in the images.
+.checkChannels <- function(x, channels, nChannels, arg) {
+  if (is.numeric(x)) {
+    if (length(x) == 0 || any(is.na(x)) || any(x < 1 | x > nChannels | x != round(x))) {
+      stop("`", arg, "` channel positions must be between 1 and ", nChannels, ".")
+    }
+    return(if (is.null(channels)) x else channels[x])
+  }
+  missing <- setdiff(x, channels)
+  if (length(x) == 0 || length(missing) > 0) {
+    stop(
+      "`", arg, "` marker", if (length(missing) > 1) "s", " '",
+      paste(missing, collapse = "', '"), "' not found in the images. ",
+      "Channels are: ", paste(channels, collapse = ", "), "."
     )
-  
-    # Converting from a tiff stack to individual images
-    cellList <- NULL
-    
-    for (i in seq_along(cells)) {
-      cellList[[names(cells)[i]]] <- cells[[i]]
-    }
-    
-    cyto.mask <- cytomapper::CytoImageList(cellList)
+  }
+  x
+}
 
-    if (is.null(names(image))) {
-      names(image) <- c(seq_along(image))
-    }
-
-    if (is(image, "CytoImageList")) {
-      mcols(cyto.mask) <- mcols(image)
-    }
-
-    S4Vectors::mcols(cyto.mask)$imageID <- names(image)
-
-    objectNum <- as.list(vapply(cyto.mask, max, numeric(1)))
-
-    mcols(cyto.mask)$objectNum <- objectNum
-    return(cyto.mask)
+.checkPositive <- function(x, arg) {
+  if (!(is.numeric(x) && length(x) == 1 && !is.na(x) && x > 0)) {
+    stop(sprintf("Invalid %s: '%s'. %s must be a positive number.", arg, paste(x, collapse = ", "), arg))
   }
 }

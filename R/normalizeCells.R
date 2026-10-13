@@ -40,7 +40,7 @@
 #' @rdname normalizeCells
 #' @importFrom SummarizedExperiment assay colData assay<-
 #' @importFrom methods is
-#' @importFrom stats coef cor median resid runif sd
+#' @importFrom stats resid lm prcomp quantile
 normalizeCells <- function(cells,
                            markers = NULL,
                            assayIn = NULL,
@@ -49,127 +49,142 @@ normalizeCells <- function(cells,
                            transformation = NULL,
                            method = NULL,
                            cores = 1) {
+  valid_transformations <- c("asinh", "sqrt")
+  bad <- setdiff(transformation, valid_transformations)
+  if (length(bad) > 0) {
+    stop(
+      "`", bad[1], "` is not a valid transformation. ",
+      "Choose one of: `sqrt`, `asinh`"
+    )
+  }
+  valid_methods <- c("mean", "minMax", "trim99", "PC1")
+  bad <- setdiff(method, valid_methods)
+  if (length(bad) > 0) {
+    stop(
+      "`", bad[1], "` is not a valid method. ",
+      "Choose one of: `mean`, `minMax`, `trim99` or `PC1`"
+    )
+  }
+  perImage <- intersect(method, c("mean", "minMax", "trim99"))
+
   sce <- NULL
   ## handling sce and se
   if (is(cells, "SingleCellExperiment") || is(cells, "SpatialExperiment")) {
     sce <- cells
-    if (is.null(assayIn)) {
-      cells <- as.data.frame(t(assay(sce)))
-    } else {
-      cells <- as.data.frame(t(assay(sce, assayIn)))
-    }
-    cells[[imageID]] <- colData(sce)[[imageID]]
-  }
-
-  if (is.null(markers)) {
-    markers <- colnames(cells)[!colnames(cells) %in% imageID]
-  }
-
-  PC1 <- function(cells, markers, imageID) {
-    pca <- prcomp(cells[, markers])
-
-    PC1 <- pca$x[, "PC1"]
-
-
-    for (i in markers) {
-      y <- cells[, i]
-      fit <- lm(y ~ PC1)
-      int <- fit$coefficients["(Intercept)"]
-      cells[, i] <- pmax(resid(fit) + int, 0)
-      q <- quantile(cells[, i], 0.99)
-      if (q <= 0) q <- 1
-      cells[, i] <- pmin(cells[, i], q) / q
-    }
-    return(cells)
-  }
-
-  if (!is.null(transformation)) {
-    for (i in seq_along(transformation)) {
-      cells[, markers] <- switch(transformation[i],
-        "asinh" = asinh(cells[, markers]),
-        "sqrt" = {
-          if (min(cells[, markers]) < 0) {
-            stop(paste0(
-                "Can't use `sqrt` normailastion on negative markers.",
-                " Consider using `asinh`."
-            ))
-          }
-          sqrt(cells[, markers])
-        },
-        stop(paste0(
-          "`",transformation[i],"` is not a valid transformation. ",
-          "Choose one of: `sqrt`, `asinh`"
-       ))
+    values <- if (is.null(assayIn)) assay(sce) else assay(sce, assayIn)
+    values <- as.matrix(values)
+    ids <- colData(sce)[[imageID]]
+    if (is.null(ids) && length(perImage) > 0) {
+      stop(
+        "imageID '", imageID, "' is not a column of colData(cells); ",
+        "it is needed to normalise each image for method ",
+        paste0("`", perImage, "`", collapse = ", "), "."
       )
     }
+    if (is.null(markers)) markers <- rownames(values)
+    if (is.null(markers)) markers <- seq_len(nrow(values))
+    missing <- setdiff(markers, rownames(values))
+    X <- t(values[markers, , drop = FALSE])
+  } else {
+    if (!imageID %in% colnames(cells) && length(perImage) > 0) {
+      stop(
+        "imageID '", imageID, "' is not a column of cells; ",
+        "it is needed to normalise each image for method ",
+        paste0("`", perImage, "`", collapse = ", "), "."
+      )
+    }
+    ids <- cells[[imageID]]
+    if (is.null(markers)) {
+      markers <- colnames(cells)[!colnames(cells) %in% imageID]
+    }
+    missing <- setdiff(markers, colnames(cells))
+    X <- as.matrix(cells[, markers, drop = FALSE])
+  }
+  if (is.character(markers) && length(missing) > 0) {
+    stop("Markers not found: ", paste(missing, collapse = ", "), ".")
   }
 
-  if (!is.null(method)) {
-    for (i in seq_along(method)) {
-      cells <- switch(method[i],
-        "mean" = meandiv(cells, markers, imageID),
-        "minMax" = minMax(cells, markers, imageID),
-        "trim99" = trim99(cells, markers, imageID),
-        "PC1" = PC1(cells, markers, imageID),
-        stop(paste0(
-          "`",method[i],"` is not a valid method. ",
-          "Choose one of: `mean`, `minMax`, `trim99` or `PC1`"
+  for (t in transformation) {
+    X <- switch(t,
+      "asinh" = asinh(X),
+      "sqrt" = {
+        if (min(X) < 0) {
+          stop(paste0(
+            "Can't use `sqrt` normailastion on negative markers.",
+            " Consider using `asinh`."
           ))
+        }
+        sqrt(X)
+      }
+    )
+  }
+
+  if (length(method) > 0) {
+    groups <- if (!is.null(ids)) split(seq_len(nrow(X)), ids)
+    for (m in method) {
+      X <- switch(m,
+        "mean" = .perImage(X, groups, meandiv),
+        "minMax" = .perImage(X, groups, minMax),
+        "trim99" = .perImage(X, groups, trim99),
+        "PC1" = PC1(X)
       )
     }
   }
 
-  if (is(sce, "SingleCellExperiment") || is(cells, "SpatialExperiment")) {
-    assay(sce, assayOut) <- t(cells[colnames(cells) != imageID])
+  if (!is.null(sce)) {
+    values[markers, ] <- t(X)
+    assay(sce, assayOut) <- values
     return(sce)
   }
 
+  cells[, markers] <- X
   cells
 }
 
-meandiv <- function(cells, markers, imageID) {
-  for (i in unique(cells[[imageID]])) {
-    markerMeans <- apply(
-      cells[cells[[imageID]] == i, markers],
-      2,
-      mean,
-      0.001
-    )
-    markerMeans[markerMeans <= 0] <- 1
-    cells[cells[[imageID]] == i, markers] <-
-      sweep(
-        cells[cells[[imageID]] == i, markers],
-        2,
-        markerMeans,
-        "/"
-      )
+## Apply a normalisation to the cells (rows of X) of each image separately.
+.perImage <- function(X, groups, FUN) {
+  for (g in groups) {
+    X[g, ] <- FUN(X[g, , drop = FALSE])
   }
-  cells
+  X
 }
 
-trim99 <- function(cells, markers, imageID) {
-  for (i in unique(cells[[imageID]])) {
-    cells[cells[[imageID]] == i, markers] <-
-      apply(cells[cells[[imageID]] == i, markers], 2, function(x) {
-        q <- quantile(x, 0.99)
-        if (q <= 0) q <- 1
-        pmin(x, q)
-      })
-  }
-
-  cells
+meandiv <- function(x) {
+  markerMeans <- apply(x, 2, mean, 0.001)
+  markerMeans[markerMeans <= 0] <- 1
+  sweep(x, 2, markerMeans, "/")
 }
 
-minMax <- function(cells, markers, imageID) {
-  for (i in unique(cells[[imageID]])) {
-    cells[cells[[imageID]] == i, markers] <-
-      apply(cells[cells[[imageID]] == i, markers], 2, function(x) {
-        x <- pmax(x - min(x), 0)
-        m <- max(x)
-        if (m <= 0) m <- 1
-        x / m
-      })
-  }
+trim99 <- function(x) {
+  apply(x, 2, function(x) {
+    q <- quantile(x, 0.99)
+    if (q <= 0) q <- 1
+    pmin(x, q)
+  })
+}
 
-  cells
+minMax <- function(x) {
+  apply(x, 2, function(x) {
+    x <- pmax(x - min(x), 0)
+    m <- max(x)
+    if (m <= 0) m <- 1
+    x / m
+  })
+}
+
+PC1 <- function(X) {
+  pca <- prcomp(X)
+
+  PC1 <- pca$x[, "PC1"]
+
+  for (i in seq_len(ncol(X))) {
+    y <- X[, i]
+    fit <- lm(y ~ PC1)
+    int <- fit$coefficients["(Intercept)"]
+    X[, i] <- pmax(resid(fit) + int, 0)
+    q <- quantile(X[, i], 0.99)
+    if (q <= 0) q <- 1
+    X[, i] <- pmin(X[, i], q) / q
+  }
+  X
 }
