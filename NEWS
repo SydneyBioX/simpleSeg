@@ -23,3 +23,21 @@ Changes in version 0.99.7 (2022-010-21):
 
 + More changes based on the Bioconductor review process
 + Modified test to make them more robust
+
+Changes in version 1.15.1 (2026-10-14):
+
++ cellBody = "discModel" and cell body markers work again for several images
+  of the same size, and cell body markers work for a single image.
++ An image where no nuclei pass the threshold gives a warning and an empty
+  mask instead of an lm.fit error (#20).
++ simpleSeg() checks that nucleus and tissue markers exist, and checks
+  watershed, cellBody and cores; nucleus can be given as channel positions.
++ normalizeCells() stops when imageID is missing and a per-image method is
+  requested (#16, #22), and works with a single marker.
++ Faster segmentation with lower memory use: each image is processed once in
+  one task, on plain arrays, with fitted values from one QR fit. Masks are
+  unchanged.
++ Parallel processing forks the workers once per call and gives every image
+  its own random number stream, so masks do not depend on the number of
+  cores. BLAS uses one thread per worker when RhpcBLASctl is installed.
++ terra, spatstat.geom and grDevices are no longer imported.
