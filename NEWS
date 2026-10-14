@@ -40,4 +40,15 @@ Changes in version 1.15.1 (2026-10-14):
 + Parallel processing starts the BiocParallel workers once per call, runs
   BLAS with one thread per worker, and gives every image its own random
   number stream, so masks do not depend on the number of cores.
-+ terra, spatstat.geom and grDevices are no longer imported.
++ New simpleSegFile() segments a large image stored as a TIFF file
+  (OME-TIFF, QPTIFF or multi-page TIFF) tile by tile without reading it into
+  memory, and returns the cells, with the mean intensity of every channel, as
+  a SpatialExperiment. Its cells are those of simpleSeg() on the whole image.
++ Gaussian smoothing is done in C++ (faster, and much less memory than the
+  FFT used before; values agree to about 1e-13).
++ Pixels of equal height are separated by a tiny amount (1e-6 of the
+  tolerance) depending on their position before the watershed, so masks no
+  longer depend on how ties are ordered. Masks from watershed = "distance",
+  where most pixels are tied, and from transform "norm99" change slightly.
++ spatstat.geom and grDevices are no longer imported; terra is suggested
+  (for simpleSegFile()) rather than imported.

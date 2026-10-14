@@ -24,14 +24,16 @@ BEGIN_RCPP
 END_RCPP
 }
 // labelMoments
-NumericMatrix labelMoments(IntegerMatrix label, int n);
-RcppExport SEXP _simpleSeg_labelMoments(SEXP labelSEXP, SEXP nSEXP) {
+NumericMatrix labelMoments(IntegerMatrix label, int n, double x0, double y0);
+RcppExport SEXP _simpleSeg_labelMoments(SEXP labelSEXP, SEXP nSEXP, SEXP x0SEXP, SEXP y0SEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< IntegerMatrix >::type label(labelSEXP);
     Rcpp::traits::input_parameter< int >::type n(nSEXP);
-    rcpp_result_gen = Rcpp::wrap(labelMoments(label, n));
+    Rcpp::traits::input_parameter< double >::type x0(x0SEXP);
+    Rcpp::traits::input_parameter< double >::type y0(y0SEXP);
+    rcpp_result_gen = Rcpp::wrap(labelMoments(label, n, x0, y0));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -48,11 +50,26 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// breakTies
+NumericMatrix breakTies(NumericMatrix h, int x0, int y0, double eps);
+RcppExport SEXP _simpleSeg_breakTies(SEXP hSEXP, SEXP x0SEXP, SEXP y0SEXP, SEXP epsSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< NumericMatrix >::type h(hSEXP);
+    Rcpp::traits::input_parameter< int >::type x0(x0SEXP);
+    Rcpp::traits::input_parameter< int >::type y0(y0SEXP);
+    Rcpp::traits::input_parameter< double >::type eps(epsSEXP);
+    rcpp_result_gen = Rcpp::wrap(breakTies(h, x0, y0, eps));
+    return rcpp_result_gen;
+END_RCPP
+}
 
 static const R_CallMethodDef CallEntries[] = {
     {"_simpleSeg_gaussianBlur", (DL_FUNC) &_simpleSeg_gaussianBlur, 3},
-    {"_simpleSeg_labelMoments", (DL_FUNC) &_simpleSeg_labelMoments, 2},
+    {"_simpleSeg_labelMoments", (DL_FUNC) &_simpleSeg_labelMoments, 4},
     {"_simpleSeg_labelSums", (DL_FUNC) &_simpleSeg_labelSums, 3},
+    {"_simpleSeg_breakTies", (DL_FUNC) &_simpleSeg_breakTies, 4},
     {NULL, NULL, 0}
 };
 

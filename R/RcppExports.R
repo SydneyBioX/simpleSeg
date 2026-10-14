@@ -5,11 +5,15 @@
     .Call(`_simpleSeg_gaussianBlur`, x, sigma, circular)
 }
 
-.labelMomentsCpp <- function(label, n) {
-    .Call(`_simpleSeg_labelMoments`, label, n)
+.labelMomentsCpp <- function(label, n, x0, y0) {
+    .Call(`_simpleSeg_labelMoments`, label, n, x0, y0)
 }
 
 .labelSumsCpp <- function(label, values, n) {
     .Call(`_simpleSeg_labelSums`, label, values, n)
+}
+
+.breakTiesCpp <- function(h, x0, y0, eps) {
+    .Call(`_simpleSeg_breakTies`, h, x0, y0, eps)
 }
 

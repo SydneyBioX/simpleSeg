@@ -2,7 +2,6 @@
 
 export(normalizeCells)
 export(simpleSeg)
-export(simpleSegFile)
 importFrom(BiocParallel,"bptasks<-")
 importFrom(BiocParallel,bpisup)
 importFrom(BiocParallel,bplapply)

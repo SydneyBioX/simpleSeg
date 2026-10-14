@@ -186,6 +186,32 @@ In order to characterise the phenotypes of each of the segmented cells, `measure
 cellSCE <- cytomapper::measureObjects(masks, images, img_id = "imageID")
 ```
 
+# Segmenting image files
+
+`simpleSeg` can also read images from files, without `cytomapper`. Given a path, it returns the cells as a `SpatialExperiment`: the mean intensity of each channel in each cell (the `counts` assay), the cell's image, label (`object_id`) and area (`s.area`), and its centroid (`m.cx`, `m.cy`) as spatial coordinates. A path can be a multi-channel image file (OME-TIFF, QPTIFF, or a TIFF with one page per channel), a folder of single-channel files that make up one image, or a folder of such folders. The example data are stored as one folder per image, with one file per marker.
+
+```{r files}
+cellSPE <- simpleSeg(pathToImages,
+  nucleus = "HH3",
+  transform = "sqrt",
+  maskDir = file.path(tempdir(), "masks")
+)
+cellSPE
+```
+
+The masks are saved as TIFF files in `maskDir`. Setting `output = "masks"` returns them as a `CytoImageList` instead, and `output = "none"` only saves them.
+
+Whole-slide images, such as those from PhenoCycler or CODEX, can be too large to read into R. Images wider or taller than `tileSize` pixels are segmented tile by tile, reading one window of the image at a time. The threshold, transformation constants and watershed tolerance are first calculated over the whole image, each tile is segmented with `overlap` pixels around it, and a cell belongs to the tile that contains its centroid. The cells are those found by segmenting the whole image. Tiles are processed in parallel with `cores`. Tiled images support `cellBody = "dilate"` or `"none"`.
+
+```{r tiles}
+tiledSPE <- simpleSeg(pathToImages,
+  nucleus = "HH3",
+  transform = "sqrt",
+  tileSize = 512
+)
+ncol(tiledSPE) == ncol(cellSPE)
+```
+
 # Normalising cells
 
 Once cellular features have been extracted into a SingleCellExperement or dataframe, these features may then be normalised using the `normalizeCells`function, transformed by any number of transformations (e.g., `asinh`, `sqrt`) and normalisation methods.

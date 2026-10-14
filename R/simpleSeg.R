@@ -1,7 +1,7 @@
 #' Perform simple segmentation of multiplexed cellular images
 #'
-#' @param image An image or list of images or CytoImageList to be read into the
-#'              function.
+#' @param image An image, a list of images or a CytoImageList; or paths to
+#'              image files or folders (see Details).
 #' @param nucleus The marker or list of markers corresponding to the nuclei.
 #' @param cellBody Method of cytoplasm identification. Can be 'none', dilate',
 #'                 'discModel' or the name of a dedicated cytoplasm marker
@@ -35,8 +35,47 @@
 #' @param pca Whether to run PCA on aggregated nucleus markers in order to
 #'            detect the cellular nucclei.
 #' @param cores The number or cores for parallel processing or a BPPARAM object
+#' @param output What to return: "masks" (a CytoImageList of cell masks),
+#'               "cells" (a SpatialExperiment of the cells, see Value) or
+#'               "none" (only write the masks to `maskDir`). Defaults to
+#'               "masks" for images and "cells" for paths.
+#' @param maskDir Optional folder in which to save each image's mask as a TIFF
+#'                file named after the image.
+#' @param tileSize Images read from files that are wider or taller than
+#'                 `tileSize` pixels are segmented in tiles of this size,
+#'                 without reading the whole image into memory.
+#' @param overlap Pixels added on each side of a tile. It should be larger
+#'                than the largest cell.
 #'
-#' @return A list of image masks
+#' @details
+#' `image` may be given as paths:
+#' * a multi-channel image file (OME-TIFF, QPTIFF, or a TIFF with one page or
+#'   band per channel) is one image; channel names are read from the OME-XML or
+#'   QPTIFF metadata;
+#' * a folder of single-channel TIFF files is one image split by marker, with
+#'   the file names (without extension) as channel names; if the files have
+#'   more than three channels each, each file is instead treated as an image;
+#' * a folder of such folders holds one image per folder.
+#'
+#' Images that fit within `tileSize` are read into memory and segmented as
+#' images in R are. Larger images are segmented tile by tile: the threshold,
+#' transformation constants and watershed tolerance are first calculated over
+#' the whole image, each tile is segmented with `overlap` pixels around it, and
+#' each cell belongs to the tile containing its centroid. The cells are those
+#' found when segmenting the whole image. Tiled images support `cellBody`
+#' "dilate" and "none", and all transformations except "tissueMask";
+#' "norm99" needs integer pixel values.
+#'
+#' Before the watershed, pixels of equal height are separated by a tiny amount
+#' (a millionth of the tolerance) that depends on their position, so that ties
+#' are resolved the same way however the image is processed.
+#'
+#' @return With output = "masks", a CytoImageList of masks. With output =
+#'   "cells", a SpatialExperiment with one column per cell: the mean intensity
+#'   of each channel (assay "counts"), the image (`imageID`), the cell's label
+#'   in its mask (`object_id`) and its area in pixels (`s.area`) in the
+#'   colData, and its centroid (`m.cx`, `m.cy`, in pixels) as spatialCoords.
+#'   With output = "none", the paths of the mask files, invisibly.
 #'
 #' @examples
 #'
@@ -51,8 +90,12 @@
 #'   watershed = "combine",
 #'   tolerance = 1, ext = 1,
 #'   discSize = 3,
-#'   cores = 5
+#'   cores = 1
 #' )
+#'
+#' # images stored as one folder of single-channel files per image
+#' path <- system.file("extdata", package = "simpleSeg")
+#' cells <- simpleSeg(path, nucleus = "HH3", transform = "sqrt")
 #'
 #' @export simpleSeg
 #' @rdname simpleSeg
@@ -75,18 +118,47 @@ simpleSeg <- function(image,
                       discSize = 3,
                       tissue = NULL,
                       pca = FALSE,
-                      cores = 1) {
-  if (!is(image, "list") && !is(image, "CytoImageList")) {
-    image <- list(image = image)
+                      cores = 1,
+                      output = NULL,
+                      maskDir = NULL,
+                      tileSize = 4096,
+                      overlap = 64) {
+  fromFiles <- is.character(image)
+  if (fromFiles) {
+    sources <- .imageSources(image)
+    channels <- sources[[1]]$channels
+    for (src in sources) {
+      if (!identical(src$channels, channels)) {
+        stop(
+          "All images must have the same channels; '", src$id,
+          "' differs from '", sources[[1]]$id, "'."
+        )
+      }
+    }
+    nChannels <- length(channels)
+    ids <- names(sources)
+  } else {
+    if (!is(image, "list") && !is(image, "CytoImageList")) {
+      image <- list(image = image)
+    }
+    if (length(image) == 0) stop("`image` contains no images.")
+    if (is.null(names(image))) {
+      names(image) <- as.character(seq_along(image))
+    }
+    channels <- dimnames(image[[1]])[[3]]
+    nChannels <- dim(image[[1]])[3]
+    if (is.na(nChannels)) {
+      stop("Each image must have a third dimension holding its channels.")
+    }
+    ids <- names(image)
   }
-  if (length(image) == 0) stop("`image` contains no images.")
-  if (is.null(names(image))) {
-    names(image) <- as.character(seq_along(image))
+
+  if (is.null(output)) output <- if (fromFiles) "cells" else "masks"
+  if (!(length(output) == 1 && output %in% c("masks", "cells", "none"))) {
+    stop("`output` must be \"masks\", \"cells\" or \"none\".")
   }
-  channels <- dimnames(image[[1]])[[3]]
-  nChannels <- dim(image[[1]])[3]
-  if (is.na(nChannels)) {
-    stop("Each image must have a third dimension holding its channels.")
+  if (output == "none" && is.null(maskDir)) {
+    stop("output = \"none\" needs `maskDir`, the folder to save the masks in.")
   }
 
   if ("PCA" %in% nucleus) {
@@ -114,8 +186,12 @@ simpleSeg <- function(image,
   .checkPositive(smooth, "smooth")
   .checkPositive(ext, "ext")
   .checkPositive(discSize, "discSize")
+  .checkPositive(tileSize, "tileSize")
   if (!is.null(tolerance)) .checkPositive(tolerance, "tolerance")
   if (!(isTRUE(pca) || isFALSE(pca))) stop("`pca` must be TRUE or FALSE.")
+  if (!(length(overlap) == 1 && is.numeric(overlap) && overlap >= 0)) {
+    stop("`overlap` must be a number of pixels.")
+  }
 
   valid_watershed <- c("intensity", "distance", "combine")
   if (!(length(watershed) == 1 && watershed %in% valid_watershed)) {
@@ -153,14 +229,17 @@ simpleSeg <- function(image,
   }
 
   .nWorkers(cores)
+  if (!is.null(maskDir)) dir.create(maskDir, showWarnings = FALSE, recursive = TRUE)
+  maskFile <- function(id) if (!is.null(maskDir)) file.path(maskDir, paste0(id, ".tif"))
 
   ## Each image has its own random number stream (used by the PCA subsample).
   x <- runif(1) # nolint
-  streams <- .rngStreams(length(image), .Random.seed[1])
+  streams <- .rngStreams(length(ids), .Random.seed[1])
 
-  masks <- .parLapply(seq_along(image), function(i) {
-    .withStream(streams[[i]], .segmentImage(image[[i]],
-      name = names(image)[i],
+  ## Segment one image held in memory, then measure and/or save its mask.
+  segment <- function(i, img) {
+    mask <- .withStream(streams[[i]], .segmentImage(img,
+      name = ids[i],
       nucleusIndex = nucleus,
       cellBody = cellBody,
       useCellMarkers = useCellMarkers,
@@ -174,19 +253,51 @@ simpleSeg <- function(image,
       tissueIndex = tissue,
       pca = pca
     ))
-  }, cores = cores)
-  names(masks) <- names(image)
+    if (!is.null(maskDir)) .writeMask(mask, maskFile(ids[i]))
+    list(
+      mask = if (output == "masks") mask,
+      cells = if (output == "cells") .maskCells(mask, img)
+    )
+  }
 
+  if (!fromFiles) {
+    res <- .parLapply(seq_along(image), function(i) segment(i, image[[i]]), cores = cores)
+  } else {
+    big <- vapply(sources, function(s) s$nx > tileSize || s$ny > tileSize, logical(1))
+    if (any(big) && (!cellBody %in% c("dilate", "none") || pca || "tissueMask" %in% transform)) {
+      stop(
+        "Images larger than `tileSize` (", paste(ids[big], collapse = ", "),
+        ") are segmented in tiles, which supports cellBody \"dilate\" or \"none\", ",
+        "without pca or \"tissueMask\". Increase `tileSize` to read them whole."
+      )
+    }
+    res <- vector("list", length(sources))
+    small <- which(!big)
+    res[small] <- .parLapply(small, function(i) segment(i, .readImage(sources[[i]])), cores = cores)
+    par <- list(
+      nucleus = nucleus, smooth = smooth, sizeSelection = sizeSelection,
+      watershed = watershed, tolerance = tolerance, ext = ext, discSize = discSize,
+      wholeCell = cellBody == "dilate", transform = transform
+    )
+    for (i in which(big)) {
+      r <- .segmentTiled(sources[[i]], par, tileSize, overlap, cores,
+        maskFile = maskFile(ids[i]), keepMask = output == "masks"
+      )
+      res[[i]] <- list(mask = r$mask, cells = r$cells)
+    }
+  }
+  names(res) <- ids
+
+  if (output == "none") return(invisible(vapply(ids, maskFile, "")))
+  if (output == "cells") return(.cellsSPE(lapply(res, `[[`, "cells"), channels))
+
+  masks <- lapply(res, function(r) EBImage::Image(r$mask))
   cyto.mask <- cytomapper::CytoImageList(masks)
-
   if (is(image, "CytoImageList")) {
     mcols(cyto.mask) <- mcols(image)
   }
-
-  S4Vectors::mcols(cyto.mask)$imageID <- names(image)
-
+  S4Vectors::mcols(cyto.mask)$imageID <- ids
   objectNum <- as.list(vapply(masks, max, numeric(1)))
-
   mcols(cyto.mask)$objectNum <- objectNum
   cyto.mask
 }

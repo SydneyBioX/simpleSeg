@@ -106,7 +106,7 @@ NULL
     if (is.null(tolerance)) tolerance <- 1
     dist <- EBImage::distmap(nMask)
     wMask <-
-      EBImage::watershed(dist, tolerance = tolerance, ext = ext)
+      .watershed(dist, tolerance = tolerance, ext = ext)
 
     if (wholeCell) {
       kern <- EBImage::makeBrush(discSize, shape = "disc")
@@ -127,7 +127,7 @@ NULL
       tolerance <- .estimateTolerance(dist * nuc, dist, discSize = discSize)
     }
 
-    wMask <- EBImage::watershed(dist * nuc, tolerance = tolerance, ext = ext)
+    wMask <- .watershed(dist * nuc, tolerance = tolerance, ext = ext)
 
     if (wholeCell) {
       kern <- EBImage::makeBrush(discSize, shape = "disc")
@@ -143,7 +143,7 @@ NULL
     tolerance <- .estimateTolerance(nuc, EBImage::distmap(nMask), discSize)
   }
 
-  wMask <- EBImage::watershed(nuc * nMask, tolerance = tolerance, ext = ext)
+  wMask <- .watershed(nuc * nMask, tolerance = tolerance, ext = ext)
 
   ## Size Selection
   wMask[.smallObjects(wMask, sizeSelection)] <- 0
@@ -154,6 +154,17 @@ NULL
   }
 
   wMask
+}
+
+## EBImage::watershed() after separating pixels of equal height by a tiny
+## amount that depends on their position in the whole image (x0, y0: position of
+## the first pixel), so that the result does not depend on how the watershed
+## orders ties, nor on whether the image is processed whole or in tiles.
+.watershed <- function(h, tolerance, ext, x0 = 1L, y0 = 1L) {
+  h <- as.array(h)
+  storage.mode(h) <- "double"
+  h <- .breakTiesCpp(h, as.integer(x0), as.integer(y0), 1e-6 * tolerance)
+  EBImage::watershed(h, tolerance = tolerance, ext = ext)
 }
 
 ## An empty mask, with a warning, for an image where no nuclei pass the
@@ -224,7 +235,8 @@ NULL
     # subsample: use at most 100k pixels for the PCA
     if (length(which(use)) > 1e5L) use <- sample(which(use), min(1e5L, length(use)))
 
-    useMarker <- vapply(seq_len(d[3]), function(j) sd(image.long[, j]), numeric(1)) > 0
+    ## markers that vary over the pixels used for the PCA
+    useMarker <- vapply(seq_len(d[3]), function(j) sd(image.long[use, j]), numeric(1)) > 0
     pca <- prcomp(image.long[use, useMarker], scale = TRUE)
 
     usePC <- which.max(abs(

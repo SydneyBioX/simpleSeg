@@ -17,12 +17,16 @@ simpleSeg(
   discSize = 3,
   tissue = NULL,
   pca = FALSE,
-  cores = 1
+  cores = 1,
+  output = NULL,
+  maskDir = NULL,
+  tileSize = 4096,
+  overlap = 64
 )
 }
 \arguments{
-\item{image}{An image or list of images or CytoImageList to be read into the
-function.}
+\item{image}{An image, a list of images or a CytoImageList; or paths to
+image files or folders (see Details).}
 
 \item{nucleus}{The marker or list of markers corresponding to the nuclei.}
 
@@ -68,12 +72,55 @@ in transforms.}
 detect the cellular nucclei.}
 
 \item{cores}{The number or cores for parallel processing or a BPPARAM object}
+
+\item{output}{What to return: "masks" (a CytoImageList of cell masks),
+"cells" (a SpatialExperiment of the cells, see Value) or
+"none" (only write the masks to `maskDir`). Defaults to
+"masks" for images and "cells" for paths.}
+
+\item{maskDir}{Optional folder in which to save each image's mask as a TIFF
+file named after the image.}
+
+\item{tileSize}{Images read from files that are wider or taller than
+`tileSize` pixels are segmented in tiles of this size,
+without reading the whole image into memory.}
+
+\item{overlap}{Pixels added on each side of a tile. It should be larger
+than the largest cell.}
 }
 \value{
-A list of image masks
+With output = "masks", a CytoImageList of masks. With output =
+  "cells", a SpatialExperiment with one column per cell: the mean intensity
+  of each channel (assay "counts"), the image (`imageID`), the cell's label
+  in its mask (`object_id`) and its area in pixels (`s.area`) in the
+  colData, and its centroid (`m.cx`, `m.cy`, in pixels) as spatialCoords.
+  With output = "none", the paths of the mask files, invisibly.
 }
 \description{
 Perform simple segmentation of multiplexed cellular images
+}
+\details{
+`image` may be given as paths:
+* a multi-channel image file (OME-TIFF, QPTIFF, or a TIFF with one page or
+  band per channel) is one image; channel names are read from the OME-XML or
+  QPTIFF metadata;
+* a folder of single-channel TIFF files is one image split by marker, with
+  the file names (without extension) as channel names; if the files have
+  more than three channels each, each file is instead treated as an image;
+* a folder of such folders holds one image per folder.
+
+Images that fit within `tileSize` are read into memory and segmented as
+images in R are. Larger images are segmented tile by tile: the threshold,
+transformation constants and watershed tolerance are first calculated over
+the whole image, each tile is segmented with `overlap` pixels around it, and
+each cell belongs to the tile containing its centroid. The cells are those
+found when segmenting the whole image. Tiled images support `cellBody`
+"dilate" and "none", and all transformations except "tissueMask";
+"norm99" needs integer pixel values.
+
+Before the watershed, pixels of equal height are separated by a tiny amount
+(a millionth of the tolerance) that depends on their position, so that ties
+are resolved the same way however the image is processed.
 }
 \examples{
 
@@ -88,7 +135,11 @@ masks <- simpleSeg(pancreasImages,
   watershed = "combine",
   tolerance = 1, ext = 1,
   discSize = 3,
-  cores = 5
+  cores = 1
 )
+
+# images stored as one folder of single-channel files per image
+path <- system.file("extdata", package = "simpleSeg")
+cells <- simpleSeg(path, nucleus = "HH3", transform = "sqrt")
 
 }
