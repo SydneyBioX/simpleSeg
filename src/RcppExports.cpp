@@ -64,12 +64,32 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// samplePixels
+IntegerVector samplePixels(LogicalMatrix use, int x0, int y0, int cx0, int cx1, int cy0, int cy1, double p, double salt);
+RcppExport SEXP _simpleSeg_samplePixels(SEXP useSEXP, SEXP x0SEXP, SEXP y0SEXP, SEXP cx0SEXP, SEXP cx1SEXP, SEXP cy0SEXP, SEXP cy1SEXP, SEXP pSEXP, SEXP saltSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< LogicalMatrix >::type use(useSEXP);
+    Rcpp::traits::input_parameter< int >::type x0(x0SEXP);
+    Rcpp::traits::input_parameter< int >::type y0(y0SEXP);
+    Rcpp::traits::input_parameter< int >::type cx0(cx0SEXP);
+    Rcpp::traits::input_parameter< int >::type cx1(cx1SEXP);
+    Rcpp::traits::input_parameter< int >::type cy0(cy0SEXP);
+    Rcpp::traits::input_parameter< int >::type cy1(cy1SEXP);
+    Rcpp::traits::input_parameter< double >::type p(pSEXP);
+    Rcpp::traits::input_parameter< double >::type salt(saltSEXP);
+    rcpp_result_gen = Rcpp::wrap(samplePixels(use, x0, y0, cx0, cx1, cy0, cy1, p, salt));
+    return rcpp_result_gen;
+END_RCPP
+}
 
 static const R_CallMethodDef CallEntries[] = {
     {"_simpleSeg_gaussianBlur", (DL_FUNC) &_simpleSeg_gaussianBlur, 3},
     {"_simpleSeg_labelMoments", (DL_FUNC) &_simpleSeg_labelMoments, 4},
     {"_simpleSeg_labelSums", (DL_FUNC) &_simpleSeg_labelSums, 3},
     {"_simpleSeg_breakTies", (DL_FUNC) &_simpleSeg_breakTies, 4},
+    {"_simpleSeg_samplePixels", (DL_FUNC) &_simpleSeg_samplePixels, 9},
     {NULL, NULL, 0}
 };
 

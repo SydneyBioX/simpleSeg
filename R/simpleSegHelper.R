@@ -323,6 +323,13 @@ NULL
   drop(X[, piv, drop = FALSE] %*% fit$coefficients[r])
 }
 
+## Scale to [0, 1]; a constant prediction (no cell body signal) becomes 0.
+.scale01 <- function(x) {
+  x <- x - min(x)
+  m <- max(x)
+  if (m > 0) x / m else x
+}
+
 ## disc model ##
 .CytSeg <- function(nmask,
                     image,
@@ -337,8 +344,7 @@ NULL
   cytpred <- nmask
   cytpred[] <- .channelModel(image, disk)
   rm(image)
-  cytpred <- cytpred - min(cytpred)
-  cytpred <- cytpred / max(cytpred)
+  cytpred <- .scale01(cytpred)
 
   cellTh <- EBImage::otsu(cytpred, range = c(0, 1))
   cell <- cytpred > cellTh
@@ -371,8 +377,7 @@ NULL
   cytpredpred <- cytpred
   cytpredpred[] <- .channelModel(timage, cytpredsmooth)
   rm(timage)
-  cytpredpred <- cytpredpred - min(cytpredpred)
-  cytpredpred <- cytpredpred / max(cytpredpred)
+  cytpredpred <- .scale01(cytpredpred)
 
   cellTh <- EBImage::otsu(cytpredpred, range = c(0, 1))
   cell <- cytpredpred > cellTh

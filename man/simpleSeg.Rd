@@ -113,10 +113,12 @@ Images that fit within `tileSize` are read into memory and segmented as
 images in R are. Larger images are segmented tile by tile: the threshold,
 transformation constants and watershed tolerance are first calculated over
 the whole image, each tile is segmented with `overlap` pixels around it, and
-each cell belongs to the tile containing its centroid. The cells are those
-found when segmenting the whole image. Tiled images support `cellBody`
-"dilate" and "none", and all transformations except "tissueMask";
-"norm99" needs integer pixel values.
+each cell belongs to the tile containing its centroid. Without `pca` or a
+cell body model ("discModel" or markers), the cells are those found when
+segmenting the whole image. The PCA is fitted on up to 100,000 pixels and
+the cell body model on about 200,000 pixels sampled across the whole image,
+so their cells differ slightly from a segmentation of the whole image in
+memory. "norm99" needs integer pixel values.
 
 Before the watershed, pixels of equal height are separated by a tiny amount
 (a millionth of the tolerance) that depends on their position, so that ties

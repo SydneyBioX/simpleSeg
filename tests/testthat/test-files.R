@@ -54,6 +54,24 @@ test_that("tiled segmentation gives the cells and masks of the whole image", {
   }
 })
 
+test_that("tiled PCA, cell body models and tissue mask agree with the whole image", {
+  skip_if_not_installed("terra")
+  skip_if_not_installed("SpatialExperiment")
+  ex <- write_example()
+  setups <- list(
+    list(nucleus = c(25, 31), transform = "sqrt", pca = TRUE),
+    list(nucleus = 25, transform = "sqrt", cellBody = "discModel"),
+    list(nucleus = 25, transform = "sqrt", cellBody = "channel35"),
+    list(nucleus = 25, transform = c("tissueMask", "sqrt"))
+  )
+  for (setup in setups) {
+    whole <- do.call(simpleSeg, c(list(ex$file), setup))
+    tiled <- do.call(simpleSeg, c(list(ex$file, tileSize = 110, overlap = 40), setup))
+    ## the image has fewer pixels than the samples, so the models are the same
+    expect_same_cells(whole, tiled)
+  }
+})
+
 test_that("cells from files match cells from images in R", {
   skip_if_not_installed("terra")
   skip_if_not_installed("SpatialExperiment")

@@ -103,9 +103,9 @@ NumericVector labelSums(IntegerVector label, NumericVector values, int n) {
   return out;
 }
 
-// A number in [0, 1) from a pixel's position in the whole image.
-static inline double pixelHash(uint32_t x, uint32_t y) {
-  uint64_t z = ((uint64_t) x << 32) ^ (uint64_t) y;
+// A number in [0, 1) from a pixel's position in the whole image (and a salt).
+static inline double pixelHash(uint32_t x, uint32_t y, uint64_t salt = 0) {
+  uint64_t z = (((uint64_t) x << 32) ^ (uint64_t) y) + salt * 0xd1b54a32d192ed03ULL;
   z += 0x9e3779b97f4a7c15ULL;
   z = (z ^ (z >> 30)) * 0xbf58476d1ce4e5b9ULL;
   z = (z ^ (z >> 27)) * 0x94d049bb133111ebULL;
@@ -128,4 +128,23 @@ NumericMatrix breakTies(NumericMatrix h, int x0, int y0, double eps) {
     }
   }
   return out;
+}
+
+// Pixels of the core of a window (rows cx0..cx1, columns cy0..cy1, from 1)
+// where `use` is TRUE and the position hash is below p: a random sample with
+// probability p that depends only on the pixels' positions in the whole image
+// (window pixel [1, 1] is (x0, y0)) and the salt. Returns window indices.
+// [[Rcpp::export(name = ".samplePixelsCpp")]]
+IntegerVector samplePixels(LogicalMatrix use, int x0, int y0, int cx0, int cx1,
+                           int cy0, int cy1, double p, double salt) {
+  std::vector<int> out;
+  int nr = use.nrow();
+  uint64_t s = (uint64_t) salt;
+  for (int j = cy0 - 1; j < cy1; j++) {
+    for (int i = cx0 - 1; i < cx1; i++) {
+      size_t k = (size_t) j * nr + i;
+      if (use[k] == TRUE && pixelHash(x0 + i, y0 + j, s + 1) < p) out.push_back((int) k + 1);
+    }
+  }
+  return wrap(out);
 }

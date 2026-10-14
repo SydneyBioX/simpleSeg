@@ -1,20 +1,46 @@
 ## Segmentation of a large image file tile by tile.
 ##
-## The quantities simpleSeg() computes over the whole image (the transformation
-## constants, the shift and Otsu threshold of the nucleus signal, the combine
-## median and the watershed tolerance) are first accumulated over all tiles.
-## Each tile is then segmented with an overlap around it, and keeps the cells
-## whose centroid lies in its core. The blur reads a margin that wraps around
-## the image edges and the watershed breaks ties by position in the whole
-## image, so the cells are those of simpleSeg() on the whole image.
+## Quantities that simpleSeg() computes over the whole image are found first:
+## exactly where they come from histograms or sums over pixels (transformation
+## constants, tissue mask and nucleus thresholds, combine median, watershed
+## tolerance), and from a random sample of pixels across the tiles for the PCA
+## and the cell body models. Each tile is then segmented with an overlap
+## around it, and keeps the cells whose centroid lies in its core. The blur
+## reads a margin that wraps around the image edges and the watershed breaks
+## ties by position in the whole image, so without PCA or a cell body model
+## the cells are those of simpleSeg() on the whole image.
 
 #' @importFrom graphics hist.default
-.segmentTiled <- function(img, par, tileSize, overlap, cores, maskFile = NULL, keepMask = FALSE) {
+.segmentTiled <- function(img, par, tileSize, overlap, cores, maskFile = NULL,
+                          keepMask = FALSE, salt = 0) {
   tiles <- .tileGrid(img$nx, img$ny, as.integer(tileSize), as.integer(overlap))
   par$img <- img
+  par$salt <- salt
+  par$cache <- tempfile("simpleSegTiles")
+  dir.create(par$cache)
+  on.exit(unlink(par$cache, recursive = TRUE), add = TRUE)
   empty <- list(cells = .noCells(img), mask = if (keepMask) matrix(0L, img$nx, img$ny))
+  noNuclei <- function() {
+    warning("No nuclei found in image '", img$id, "'.", call. = FALSE)
+    empty
+  }
 
-  par$plan <- .transformPlan(img, par$transform, par$nucleus, tiles, cores)
+  ## tissue mask and transformation constants: the nucleus signal uses the
+  ## image within the tissue, the cell body models the whole image
+  if ("tissueMask" %in% par$transform) par$tissue <- .tissueSetup(par, tiles, cores)
+  allChannels <- par$pca || par$cellModel != "none" || "norm99" %in% par$transform
+  used <- if (allChannels) img$channels else par$nucleus
+  par$plan <- .transformPlan(par, used, tiles, cores, masked = !is.null(par$tissue))
+  par$cellPlan <- if (par$cellModel != "none" && !is.null(par$tissue)) {
+    .transformPlan(par, img$channels, tiles, cores, masked = FALSE)
+  } else {
+    par$plan
+  }
+
+  if (par$pca) {
+    par <- .pcaSetup(par, tiles, cores)
+    if (is.null(par)) return(noNuclei())
+  }
 
   ## shift and Otsu threshold of the nucleus signal
   r <- .parLapply(tiles, function(tile) {
@@ -27,10 +53,7 @@
     if (length(v)) range(v) else c(Inf, -Inf)
   }, cores = cores)
   otsuRange <- c(min(vapply(r, `[`, numeric(1), 1)), max(vapply(r, `[`, numeric(1), 2)))
-  if (!all(is.finite(otsuRange))) {
-    warning("No nuclei found in image '", img$id, "'.", call. = FALSE)
-    return(empty)
-  }
+  if (!all(is.finite(otsuRange))) return(noNuclei())
   breaks <- seq(otsuRange[1], otsuRange[2], length.out = 257)
   counts <- .parLapply(tiles, function(tile) {
     v <- .tileSignal(par, tile)[tile$cx, tile$cy] - par$shift
@@ -53,10 +76,7 @@
     }
     if (is.null(tolerance)) {
       fit <- Reduce(.mergeMoments, lapply(stats, `[[`, "moments"))
-      if (is.null(fit) || fit$n < 2) {
-        warning("No nuclei found in image '", img$id, "'.", call. = FALSE)
-        return(empty)
-      }
+      if (is.null(fit) || fit$n < 2) return(noNuclei())
       tolerance <- fit$cxy / fit$cxx
       if (par$watershed == "combine") tolerance <- tolerance / par$median
     }
@@ -64,15 +84,12 @@
   if (is.null(tolerance)) tolerance <- 1
   par$tolerance <- tolerance
 
+  if (par$cellModel != "none") par <- .cellModelSetup(par, tiles, cores)
+
   ## segment and measure; keep each tile's labels for the mask
   saveLabels <- keepMask || !is.null(maskFile)
-  labelDir <- if (saveLabels) tempfile("simpleSegTiles")
-  if (saveLabels) {
-    dir.create(labelDir)
-    on.exit(unlink(labelDir, recursive = TRUE), add = TRUE)
-  }
   cells <- .parLapply(seq_along(tiles), function(i) {
-    .tileCells(par, tiles[[i]], if (saveLabels) file.path(labelDir, paste0(i, ".rds")))
+    .tileCells(par, tiles[[i]], i, saveLabels)
   }, cores = cores)
   edge <- sum(vapply(cells, `[[`, numeric(1), "edge"))
   if (edge > 0) {
@@ -82,12 +99,11 @@
     )
   }
   n <- vapply(cells, function(x) length(x$area), integer(1))
-  ids <- split(seq_len(sum(n)), rep(seq_along(cells), n))
-  for (i in seq_along(cells)) cells[[i]]$object_id <- if (n[i]) ids[[as.character(i)]] else integer(0)
+  offset <- c(0L, cumsum(n))
+  for (i in seq_along(cells)) cells[[i]]$object_id <- offset[i] + seq_len(n[i])
   out <- list(cells = .combineCells(cells, img))
-
   if (saveLabels) {
-    out$mask <- .stitchMask(img, tiles, labelDir, c(0L, cumsum(n)), cores, maskFile, keepMask)
+    out$mask <- .stitchMask(img, tiles, par$cache, offset, cores, maskFile, keepMask)
   }
   out
 }
@@ -122,19 +138,21 @@
 ## running the transformations on each channel's histogram of pixel values.
 ## norm99 needs the histograms (integer pixel values); maxThresh only each
 ## channel's maximum, as the transformations keep the order of values.
-.transformPlan <- function(img, transform, nucleus, tiles, cores) {
+## `masked`: the pixels outside the tissue are 0.
+.transformPlan <- function(par, used, tiles, cores, masked = FALSE) {
+  transform <- setdiff(par$transform, "tissueMask")
   if (!any(c("norm99", "maxThresh") %in% transform)) {
     return(lapply(transform, function(t) list(type = t)))
   }
+  img <- par$img
   full <- "norm99" %in% transform
-  used <- if (full) img$channels else nucleus
   hists <- .parLapply(tiles, function(tile) {
-    core <- list(
-      x0 = tile$core[1], y0 = tile$core[3],
-      w = length(tile$cx), h = length(tile$cy)
-    )
+    xs <- tile$core[1]:tile$core[2]
+    ys <- tile$core[3]:tile$core[4]
+    inside <- if (masked) .tileTissue(par, xs, ys)
     lapply(used, function(ch) {
-      v <- .readWindow(img, ch, core)
+      v <- .readIndexed(img, ch, xs, ys)
+      if (masked) v <- v * inside
       if (!full) return(list(at = max(v), n = 1))
       if (any(v != round(v)) || min(v) < 0 || max(v) > 65535) {
         stop("transform \"norm99\" on images larger than `tileSize` needs non-negative integer pixel values.")
@@ -232,19 +250,43 @@
 
 ## ---- segmentation of a tile --------------------------------------------------------------------
 
-## Smoothed nucleus signal of a tile's window (before the whole-image shift),
-## read with a margin of the blur radius that wraps around the image edges.
+## A tile window's x and y positions, with `margin` pixels around it that
+## wrap around the image edges.
+.windowIndex <- function(par, tile, margin = 0L) {
+  list(
+    xs = (tile$win$x0 - margin - 1L + seq_len(tile$win$w + 2L * margin) - 1L) %% par$img$nx + 1L,
+    ys = (tile$win$y0 - margin - 1L + seq_len(tile$win$h + 2L * margin) - 1L) %% par$img$ny + 1L
+  )
+}
+
+## One transformed channel at positions xs, ys; within the tissue if `masked`.
+.tileChannel <- function(par, ch, xs, ys, plan, masked = FALSE, inside = NULL) {
+  v <- .readIndexed(par$img, ch, xs, ys)
+  if (masked && !is.null(par$tissue)) {
+    if (is.null(inside)) inside <- .tileTissue(par, xs, ys)
+    v <- v * inside
+  }
+  .applyPlan(v, plan, ch)
+}
+
+## Smoothed nucleus signal of a tile's window (before the whole-image shift):
+## the mean of the nucleus channels, blurred with a margin of the blur radius
+## that wraps around the image edges; or the cached PCA projection.
 .tileSignal <- function(par, tile) {
+  if (par$pca) return(readRDS(.cacheFile(par, "pca", tile)))
   r <- ceiling(3 * par$smooth)
-  xs <- (tile$win$x0 - r - 1L + seq_len(tile$win$w + 2L * r) - 1L) %% par$img$nx + 1L
-  ys <- (tile$win$y0 - r - 1L + seq_len(tile$win$h + 2L * r) - 1L) %% par$img$ny + 1L
-  sig <- array(0, c(length(xs), length(ys), length(par$nucleus)))
+  w <- .windowIndex(par, tile, r)
+  inside <- if (!is.null(par$tissue)) .tileTissue(par, w$xs, w$ys)
+  sig <- array(0, c(length(w$xs), length(w$ys), length(par$nucleus)))
   for (k in seq_along(par$nucleus)) {
-    ch <- par$nucleus[k]
-    sig[, , k] <- .applyPlan(.readIndexed(par$img, ch, xs, ys), par$plan, ch)
+    sig[, , k] <- .tileChannel(par, par$nucleus[k], w$xs, w$ys, par$plan, TRUE, inside)
   }
   sig <- if (length(par$nucleus) > 1) rowMeans(sig, dims = 2) else sig[, , 1]
   .gaussianBlurCpp(sig, par$smooth, FALSE)
+}
+
+.cacheFile <- function(par, what, tile) {
+  file.path(par$cache, sprintf("%s_%d_%d.rds", what, tile$core[1], tile$core[3]))
 }
 
 ## One channel at the given x and y pixel positions, reading runs of
@@ -337,9 +379,11 @@
   )
 }
 
-## Segment a tile and measure the cells it owns; optionally save the labels of
-## its core for the mask.
-.tileCells <- function(par, tile, labelFile = NULL) {
+## Nuclei of a tile's window, labelled by the watershed (cached when a cell
+## body model needs them twice).
+.tileNuclei <- function(par, tile) {
+  f <- .cacheFile(par, "nuclei", tile)
+  if (file.exists(f)) return(readRDS(f))
   m <- .tileMask(par, tile)
   x0 <- tile$win$x0
   y0 <- tile$win$y0
@@ -354,8 +398,37 @@
     wMask <- .watershed(m$nuc * m$nMask, par$tolerance, par$ext, x0, y0)
     wMask[.smallObjects(wMask, par$sizeSelection)] <- 0
   }
-  if (par$wholeCell) {
-    wMask <- EBImage::dilate(wMask, EBImage::makeBrush(par$discSize, shape = "disc"))
+  wMask
+}
+
+## Cell bodies grown from the nuclei of a tile with the cell body model.
+.tileCellBody <- function(par, tile, nmask) {
+  w <- .windowIndex(par, tile)
+  model <- par$model
+  pred <- matrix(model$beta[1], length(w$xs), length(w$ys))
+  for (k in seq_along(par$img$channels)) {
+    b <- model$beta[k + 1]
+    if (b != 0) {
+      pred <- pred + b * asinh(.tileChannel(par, par$img$channels[k], w$xs, w$ys, par$cellPlan))
+    }
+  }
+  pred <- (pred - model$lo) / (model$hi - model$lo)
+  cell <- pred > model$th
+  cell <- cell + nmask > 0
+  nmask[.smallObjects(EBImage::bwlabel(nmask), par$sizeSelection)] <- 0
+  EBImage::propagate(pred, nmask, cell)
+}
+
+## Segment a tile and measure the cells it owns; optionally save the labels of
+## its cells for the mask.
+.tileCells <- function(par, tile, i, saveLabels = FALSE) {
+  nmask <- .tileNuclei(par, tile)
+  wMask <- if (par$cellModel != "none") {
+    .tileCellBody(par, tile, nmask)
+  } else if (par$wholeCell) {
+    EBImage::dilate(nmask, EBImage::makeBrush(par$discSize, shape = "disc"))
+  } else {
+    nmask
   }
   tab <- .labelTable(wMask, tile)
   own <- tab$own
@@ -366,13 +439,13 @@
     if (tile$inner[3]) tab$lab[, 1], if (tile$inner[4]) tab$lab[, ncol(tab$lab)]
   )
 
-  if (!is.null(labelFile)) {
+  if (saveLabels) {
     ## the window's pixels of the cells this tile owns, numbered 1, 2, ...
     lookup <- integer(nrow(tab$m))
     lookup[own] <- seq_along(own)
     lab <- tab$lab
     lab[lab > 0] <- lookup[lab[lab > 0]]
-    saveRDS(lab, labelFile, compress = FALSE)
+    saveRDS(lab, file.path(par$cache, paste0(i, ".rds")), compress = FALSE)
   }
 
   sums <- matrix(0, length(own), length(par$img$channels))
@@ -386,6 +459,148 @@
     sums = sums, area = tab$m[own, 1], x = tab$cx[own], y = tab$cy[own],
     edge = sum(own %in% edgeLab)
   )
+}
+
+## ---- whole-image models from samples of pixels ---------------------------------------------
+
+## Tissue mask: the log mean of the tissue channels, scaled to [0, 1] over the
+## whole image and thresholded by Otsu's method over the whole image.
+.tissueSetup <- function(par, tiles, cores) {
+  channels <- if (is.null(par$tissueChannels)) par$img$channels else par$tissueChannels
+  logMean <- function(tile) {
+    xs <- tile$core[1]:tile$core[2]
+    ys <- tile$core[3]:tile$core[4]
+    m <- 0
+    for (ch in channels) m <- m + .readIndexed(par$img, ch, xs, ys)
+    log10(m / length(channels) + 0.01)
+  }
+  r <- .parLapply(tiles, function(tile) range(logMean(tile)), cores = cores)
+  lo <- min(vapply(r, `[`, numeric(1), 1))
+  hi <- max(vapply(r, `[`, numeric(1), 2))
+  if (!(hi > lo)) hi <- lo + 1
+  breaks <- seq(0, 1, length.out = 257)
+  counts <- .parLapply(tiles, function(tile) {
+    graphics::hist.default((logMean(tile) - lo) / (hi - lo), breaks = breaks, plot = FALSE)$counts
+  }, cores = cores)
+  list(channels = channels, lo = lo, hi = hi, th = .otsuCounts(Reduce(`+`, counts), breaks))
+}
+
+## The tissue mask at positions xs, ys, without tissue regions of
+## `sizeSelection` pixels or fewer.
+.tileTissue <- function(par, xs, ys) {
+  t <- par$tissue
+  m <- 0
+  for (ch in t$channels) m <- m + .readIndexed(par$img, ch, xs, ys)
+  inside <- (log10(m / length(t$channels) + 0.01) - t$lo) / (t$hi - t$lo) > t$th
+  inside[.smallObjects(EBImage::bwlabel(inside * 1), par$sizeSelection)] <- FALSE
+  inside
+}
+
+## PCA of the blurred channels: the nucleus signal is the principal component
+## most correlated with the nucleus markers, fitted on up to 100,000 pixels
+## sampled from around the nuclei across the whole image. The projection of
+## each tile's window is cached.
+.pcaSetup <- function(par, tiles, cores) {
+  r <- ceiling(3 * par$smooth)
+  blurred <- function(ch, w, inside) {
+    .gaussianBlurCpp(.tileChannel(par, ch, w$xs, w$ys, par$plan, TRUE, inside), par$smooth, FALSE)
+  }
+  window <- function(tile) {
+    w <- .windowIndex(par, tile, r)
+    w$inside <- if (!is.null(par$tissue)) .tileTissue(par, w$xs, w$ys)
+    w
+  }
+  nucMean <- function(w) {
+    Reduce(`+`, lapply(par$nucleus, blurred, w = w, inside = w$inside)) / length(par$nucleus)
+  }
+  kern <- EBImage::makeBrush(par$discSize, shape = "disc")
+  useMask <- function(nm) EBImage::dilate(nm > par$pcaTh, kern) > 0
+
+  rr <- .parLapply(tiles, function(tile) range(nucMean(window(tile))[tile$cx, tile$cy]), cores = cores)
+  breaks <- seq(min(vapply(rr, `[`, numeric(1), 1)), max(vapply(rr, `[`, numeric(1), 2)), length.out = 257)
+  counts <- .parLapply(tiles, function(tile) {
+    graphics::hist.default(nucMean(window(tile))[tile$cx, tile$cy], breaks = breaks, plot = FALSE)$counts
+  }, cores = cores)
+  par$pcaTh <- .otsuCounts(Reduce(`+`, counts), breaks)
+
+  n <- .parLapply(tiles, function(tile) sum(useMask(nucMean(window(tile)))[tile$cx, tile$cy]), cores = cores)
+  n <- sum(unlist(n))
+  if (n == 0) return(NULL)
+  p <- min(1, 1e5 / n)
+  samples <- .parLapply(tiles, function(tile) {
+    w <- window(tile)
+    nm <- nucMean(w)
+    idx <- .samplePixelsCpp(
+      useMask(nm), tile$win$x0, tile$win$y0, tile$cx[1], tile$cx[length(tile$cx)],
+      tile$cy[1], tile$cy[length(tile$cy)], p, par$salt
+    )
+    X <- vapply(par$img$channels, function(ch) blurred(ch, w, w$inside)[idx], numeric(length(idx)))
+    list(X = matrix(X, length(idx), length(par$img$channels)), nuc = nm[idx])
+  }, cores = cores)
+  X <- do.call(rbind, lapply(samples, `[[`, "X"))
+  nuc <- unlist(lapply(samples, `[[`, "nuc"))
+
+  useMarker <- apply(X, 2, sd) > 0
+  pca <- prcomp(X[, useMarker], scale = TRUE)
+  usePC <- which.max(abs(apply(pca$x, 2, cor, nuc)))
+  rot <- numeric(ncol(X))
+  rot[useMarker] <- pca$rotation[, usePC] * sign(cor(pca$x[, usePC], nuc))
+
+  .parLapply(tiles, function(tile) {
+    w <- window(tile)
+    proj <- 0
+    for (k in which(rot != 0)) proj <- proj + rot[k] * blurred(par$img$channels[k], w, w$inside)
+    saveRDS(proj, .cacheFile(par, "pca", tile), compress = FALSE)
+    NULL
+  }, cores = cores)
+  par
+}
+
+## Cell body model: a linear model of the disc around each nucleus (discModel)
+## or of the smoothed cell body markers on the asinh of every channel, fitted on
+## about 200,000 pixels sampled across the whole image. Its predictions are
+## scaled to [0, 1] and thresholded by Otsu's method over the sample.
+.cellModelSetup <- function(par, tiles, cores) {
+  p <- min(1, 2e5 / (as.numeric(par$img$nx) * par$img$ny))
+  r <- ceiling(3 * par$smooth)
+  samples <- .parLapply(tiles, function(tile) {
+    nmask <- .tileNuclei(par, tile)
+    saveRDS(nmask, .cacheFile(par, "nuclei", tile), compress = FALSE)
+    if (par$cellModel == "discModel") {
+      cell <- EBImage::dilate(nmask, EBImage::makeBrush(par$discSize, shape = "disc"))
+      y <- (cell - nmask > 0) * 1
+    } else {
+      wm <- .windowIndex(par, tile, r)
+      raw <- 0
+      for (ch in par$markers) raw <- raw + .readIndexed(par$img, ch, wm$xs, wm$ys)
+      y <- .gaussianBlurCpp(raw / length(par$markers), par$smooth, FALSE)
+    }
+    all <- matrix(TRUE, tile$win$w, tile$win$h)
+    idx <- .samplePixelsCpp(
+      all, tile$win$x0, tile$win$y0, tile$cx[1], tile$cx[length(tile$cx)],
+      tile$cy[1], tile$cy[length(tile$cy)], p, par$salt + 1
+    )
+    w <- .windowIndex(par, tile)
+    X <- vapply(par$img$channels, function(ch) {
+      asinh(.tileChannel(par, ch, w$xs, w$ys, par$cellPlan))[idx]
+    }, numeric(length(idx)))
+    list(X = matrix(X, length(idx), length(par$img$channels)), y = y[idx])
+  }, cores = cores)
+  X <- cbind(1, do.call(rbind, lapply(samples, `[[`, "X")))
+  y <- unlist(lapply(samples, `[[`, "y"))
+
+  fit <- .lm.fit(X, y)
+  r <- seq_len(fit$rank)
+  beta <- numeric(ncol(X))
+  beta[fit$pivot[r]] <- fit$coefficients[r]
+  pred <- drop(X %*% beta)
+  lo <- min(pred)
+  hi <- max(pred)
+  if (!(hi > lo)) hi <- lo + 1
+  breaks <- seq(0, 1, length.out = 257)
+  h <- graphics::hist.default((pred - lo) / (hi - lo), breaks = breaks, plot = FALSE)$counts
+  par$model <- list(beta = beta, lo = lo, hi = hi, th = .otsuCounts(h, breaks))
+  par
 }
 
 ## The whole-image label mask from the tiles' saved labels: every tile writes

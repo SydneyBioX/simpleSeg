@@ -108,7 +108,12 @@
     r <- .rast(file)
     nx <- terra::ncol(r)
     ny <- terra::nrow(r)
-    names <- rep(NA_character_, terra::nlyr(r))
+    ## band names, unless they are terra's defaults
+    names <- names(r)
+    stem <- .stripExt(file)
+    default <- grepl("^lyr\\.[0-9]+$", names) | names == stem |
+      names == paste0(stem, "_", seq_along(names))
+    if (any(default) || anyDuplicated(names)) names <- rep(NA_character_, terra::nlyr(r))
     src <- data.frame(file = file, page = 0L, band = seq_len(terra::nlyr(r)))
   }
   if (anyNA(names) || length(names) != nrow(src)) {
@@ -130,13 +135,33 @@
 
 .rast <- function(x) suppressWarnings(terra::rast(x))
 
+## Rasters opened for reading, kept open for the rest of a simpleSeg() call
+## (opening a file costs more than reading a tile). Forked workers open their
+## own: the process id is part of the key.
+.rasters <- new.env(parent = emptyenv())
+
+.channelRaster <- function(img, channel) {
+  s <- img$src[match(channel, img$channels), ]
+  key <- paste(Sys.getpid(), s$file, s$page, s$band)
+  r <- .rasters[[key]]
+  if (is.null(r)) {
+    r <- if (s$page > 0) .rast(.pageName(s$file, s$page)) else .rast(s$file)[[s$band]]
+    terra::readStart(r)
+    assign(key, r, envir = .rasters)
+  }
+  r
+}
+
+## Close the rasters this process opened.
+.closeRasters <- function() {
+  mine <- grep(paste0("^", Sys.getpid(), " "), ls(.rasters), value = TRUE)
+  for (key in mine) try(terra::readStop(.rasters[[key]]), silent = TRUE)
+  rm(list = mine, envir = .rasters)
+}
+
 ## One channel of a window of the image, as an x by y matrix.
 .readWindow <- function(img, channel, win) {
-  s <- img$src[match(channel, img$channels), ]
-  r <- if (s$page > 0) .rast(.pageName(s$file, s$page)) else .rast(s$file)[[s$band]]
-  terra::readStart(r)
-  on.exit(terra::readStop(r))
-  v <- terra::readValues(r,
+  v <- terra::readValues(.channelRaster(img, channel),
     row = win$y0, nrows = win$h, col = win$x0, ncols = win$w,
     mat = FALSE
   )

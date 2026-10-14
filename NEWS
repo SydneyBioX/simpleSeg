@@ -57,3 +57,16 @@ Changes in version 1.15.1 (2026-10-14):
 + PCA uses the markers that vary over the pixels it is fitted on.
 + spatstat.geom and grDevices are no longer imported; terra is suggested
   (for reading files) rather than imported.
+
+
+Changes in version 1.15.2 (2026-10-14):
+
++ Tiled segmentation of large images supports pca, cellBody = "discModel" or
+  cell body markers, and transform "tissueMask". The PCA and the cell body
+  models are fitted on pixels sampled across the whole image (up to 100,000
+  and about 200,000), chosen by their position so that the sample does not
+  depend on the tiles or the number of cores.
++ Image files are opened once per process, which makes reading tiles much
+  faster.
++ Channel names are read from the band names of multi-band TIFF files.
++ Cell body models no longer fail when the cell body signal is constant.

@@ -17,3 +17,7 @@
     .Call(`_simpleSeg_breakTies`, h, x0, y0, eps)
 }
 
+.samplePixelsCpp <- function(use, x0, y0, cx0, cx1, cy0, cy1, p, salt) {
+    .Call(`_simpleSeg_samplePixels`, use, x0, y0, cx0, cx1, cy0, cy1, p, salt)
+}
+

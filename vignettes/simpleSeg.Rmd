@@ -201,7 +201,7 @@ cellSPE
 
 The masks are saved as TIFF files in `maskDir`. Setting `output = "masks"` returns them as a `CytoImageList` instead, and `output = "none"` only saves them.
 
-Whole-slide images, such as those from PhenoCycler or CODEX, can be too large to read into R. Images wider or taller than `tileSize` pixels are segmented tile by tile, reading one window of the image at a time. The threshold, transformation constants and watershed tolerance are first calculated over the whole image, each tile is segmented with `overlap` pixels around it, and a cell belongs to the tile that contains its centroid. The cells are those found by segmenting the whole image. Tiles are processed in parallel with `cores`. Tiled images support `cellBody = "dilate"` or `"none"`.
+Whole-slide images, such as those from PhenoCycler or CODEX, can be too large to read into R. Images wider or taller than `tileSize` pixels are segmented tile by tile, reading one window of the image at a time. The threshold, transformation constants and watershed tolerance are first calculated over the whole image, each tile is segmented with `overlap` pixels around it, and a cell belongs to the tile that contains its centroid. Without PCA or a cell body model, the cells are those found by segmenting the whole image. The PCA and the cell body models (`"discModel"` or markers) are fitted on pixels sampled across the whole image (up to 100,000 and about 200,000), so on large images their cells differ slightly from a segmentation of the whole image in memory. Tiles are processed in parallel with `cores`.
 
 ```{r tiles}
 tiledSPE <- simpleSeg(pathToImages,

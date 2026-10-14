@@ -61,10 +61,12 @@
 #' images in R are. Larger images are segmented tile by tile: the threshold,
 #' transformation constants and watershed tolerance are first calculated over
 #' the whole image, each tile is segmented with `overlap` pixels around it, and
-#' each cell belongs to the tile containing its centroid. The cells are those
-#' found when segmenting the whole image. Tiled images support `cellBody`
-#' "dilate" and "none", and all transformations except "tissueMask";
-#' "norm99" needs integer pixel values.
+#' each cell belongs to the tile containing its centroid. Without `pca` or a
+#' cell body model ("discModel" or markers), the cells are those found when
+#' segmenting the whole image. The PCA is fitted on up to 100,000 pixels and
+#' the cell body model on about 200,000 pixels sampled across the whole image,
+#' so their cells differ slightly from a segmentation of the whole image in
+#' memory. "norm99" needs integer pixel values.
 #'
 #' Before the watershed, pixels of equal height are separated by a tiny amount
 #' (a millionth of the tolerance) that depends on their position, so that ties
@@ -125,6 +127,7 @@ simpleSeg <- function(image,
                       overlap = 64) {
   fromFiles <- is.character(image)
   if (fromFiles) {
+    on.exit(.closeRasters(), add = TRUE)
     sources <- .imageSources(image)
     channels <- sources[[1]]$channels
     for (src in sources) {
@@ -264,24 +267,21 @@ simpleSeg <- function(image,
     res <- .parLapply(seq_along(image), function(i) segment(i, image[[i]]), cores = cores)
   } else {
     big <- vapply(sources, function(s) s$nx > tileSize || s$ny > tileSize, logical(1))
-    if (any(big) && (!cellBody %in% c("dilate", "none") || pca || "tissueMask" %in% transform)) {
-      stop(
-        "Images larger than `tileSize` (", paste(ids[big], collapse = ", "),
-        ") are segmented in tiles, which supports cellBody \"dilate\" or \"none\", ",
-        "without pca or \"tissueMask\". Increase `tileSize` to read them whole."
-      )
-    }
     res <- vector("list", length(sources))
     small <- which(!big)
     res[small] <- .parLapply(small, function(i) segment(i, .readImage(sources[[i]])), cores = cores)
     par <- list(
       nucleus = nucleus, smooth = smooth, sizeSelection = sizeSelection,
       watershed = watershed, tolerance = tolerance, ext = ext, discSize = discSize,
-      wholeCell = cellBody == "dilate", transform = transform
+      wholeCell = cellBody[1] == "dilate" && !useCellMarkers, transform = transform,
+      pca = pca, tissueChannels = tissue, markers = if (useCellMarkers) cellBody,
+      cellModel = if (useCellMarkers) "markers" else if (cellBody == "discModel") "discModel" else "none"
     )
     for (i in which(big)) {
+      ## pixels sampled for the PCA and cell body models depend on the image's stream
+      salt <- .withStream(streams[[i]], sample.int(.Machine$integer.max, 1))
       r <- .segmentTiled(sources[[i]], par, tileSize, overlap, cores,
-        maskFile = maskFile(ids[i]), keepMask = output == "masks"
+        maskFile = maskFile(ids[i]), keepMask = output == "masks", salt = salt
       )
       res[[i]] <- list(mask = r$mask, cells = r$cells)
     }
