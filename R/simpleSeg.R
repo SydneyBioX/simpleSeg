@@ -56,7 +56,9 @@
 #'
 #' @export simpleSeg
 #' @rdname simpleSeg
-#' @importFrom EBImage gblur otsu bwlabel makeBrush watershed dilate distmap propagate Image
+#' @useDynLib simpleSeg, .registration = TRUE
+#' @importFrom Rcpp sourceCpp
+#' @importFrom EBImage otsu bwlabel makeBrush watershed dilate distmap propagate Image
 #' @importFrom cytomapper CytoImageList
 #' @importFrom stats prcomp quantile median sd .lm.fit
 #' @importFrom S4Vectors mcols mcols<-

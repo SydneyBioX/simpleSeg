@@ -194,7 +194,7 @@ NULL
       dimnames = list(NULL, dimnames(image)[[3]])
     )
     for (j in seq_len(d[3])) {
-      image.long[, j] <- EBImage::gblur(image[, , j], smooth)
+      image.long[, j] <- .gblur(image[, , j], smooth)
     }
     rm(image)
 
@@ -251,7 +251,7 @@ NULL
   } else {
     image[, , nucleusIndex]
   }
-  nuc <- EBImage::gblur(nuc, smooth)
+  nuc <- .gblur(nuc, smooth)
 
   return(nuc - min(nuc))
 }
@@ -353,7 +353,7 @@ NULL
   )
   rm(image)
 
-  cytpredsmooth <- EBImage::gblur(cytpred, sigma = smooth)
+  cytpredsmooth <- .gblur(cytpred, smooth)
 
   ## using all the staining channels to predict the smoothed marker
   cytpredpred <- cytpred

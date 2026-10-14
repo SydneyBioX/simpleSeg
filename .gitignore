@@ -13,4 +13,6 @@ tests/testthat/testthat-problems.rds
 test.r
 prof_*
 
-debug
+debugsrc/*.o
+src/*.so
+src/*.dll

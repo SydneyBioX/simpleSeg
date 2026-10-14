@@ -127,3 +127,11 @@
   assign(".Random.seed", stream, envir = globalenv())
   expr
 }
+
+## Gaussian blur with the kernel of EBImage::gblur() and wrap-around edges, as
+## two one-dimensional passes in C++.
+.gblur <- function(x, sigma) {
+  x <- as.array(x)
+  storage.mode(x) <- "double"
+  .gaussianBlurCpp(x, sigma, TRUE)
+}

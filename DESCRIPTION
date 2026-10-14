@@ -18,16 +18,22 @@ Imports:
     EBImage, 
     stats, 
     parallel, 
+    graphics,
     RhpcBLASctl,
     S4Vectors, 
     SummarizedExperiment,
     methods,
-    cytomapper
+    cytomapper,
+    Rcpp
+LinkingTo:
+    Rcpp
 Suggests: 
     BiocStyle,
     testthat (>= 3.0.0),
     knitr,
-    ggplot2
+    ggplot2,
+    terra,
+    SpatialExperiment
 License: GPL-3
 Config/testthat/edition: 3
 BugReports: https://github.com/SydneyBioX/simpleSeg/issues
