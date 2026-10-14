@@ -64,9 +64,11 @@ Changes in version 1.15.2 (2026-10-14):
 + Tiled segmentation of large images supports pca, cellBody = "discModel" or
   cell body markers, and transform "tissueMask". The PCA and the cell body
   models are fitted on pixels sampled across the whole image (up to 100,000
-  and about 200,000), chosen by their position so that the sample does not
+  and about 1,000,000), chosen by their position so that the sample does not
   depend on the tiles or the number of cores.
 + Image files are opened once per process, which makes reading tiles much
   faster.
 + Channel names are read from the band names of multi-band TIFF files.
++ Pixels equal to a file's "no data" value (such as 255 in 8-bit TIFFs
+  written by terra) keep that value instead of becoming missing.
 + Cell body models no longer fail when the cell body signal is constant.

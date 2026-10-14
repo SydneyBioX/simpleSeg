@@ -116,7 +116,7 @@ the whole image, each tile is segmented with `overlap` pixels around it, and
 each cell belongs to the tile containing its centroid. Without `pca` or a
 cell body model ("discModel" or markers), the cells are those found when
 segmenting the whole image. The PCA is fitted on up to 100,000 pixels and
-the cell body model on about 200,000 pixels sampled across the whole image,
+the cell body model on about 1,000,000 pixels sampled across the whole image,
 so their cells differ slightly from a segmentation of the whole image in
 memory. "norm99" needs integer pixel values.
 

@@ -558,10 +558,10 @@
 
 ## Cell body model: a linear model of the disc around each nucleus (discModel)
 ## or of the smoothed cell body markers on the asinh of every channel, fitted on
-## about 200,000 pixels sampled across the whole image. Its predictions are
+## about 1,000,000 pixels sampled across the whole image. Its predictions are
 ## scaled to [0, 1] and thresholded by Otsu's method over the sample.
 .cellModelSetup <- function(par, tiles, cores) {
-  p <- min(1, 2e5 / (as.numeric(par$img$nx) * par$img$ny))
+  p <- min(1, 1e6 / (as.numeric(par$img$nx) * par$img$ny))
   r <- ceiling(3 * par$smooth)
   samples <- .parLapply(tiles, function(tile) {
     nmask <- .tileNuclei(par, tile)

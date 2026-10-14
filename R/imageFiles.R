@@ -119,6 +119,10 @@
   if (anyNA(names) || length(names) != nrow(src)) {
     names <- if (nrow(src) == 1) .stripExt(file) else paste0("channel", seq_len(nrow(src)))
   }
+  ## A "no data" value marks saturated pixels in microscopy images (255 or
+  ## 65535), not missing ones: reads give it back instead of NA.
+  nodata <- grep("NoData Value=", info, value = TRUE)
+  src$nodata <- if (length(nodata)) as.numeric(sub(".*NoData Value=", "", nodata[1])) else NA_real_
   list(
     id = .stripExt(file), nx = as.integer(nx), ny = as.integer(ny), channels = names,
     src = src, pixelSize = pixelSize
@@ -165,7 +169,10 @@
     row = win$y0, nrows = win$h, col = win$x0, ncols = win$w,
     mat = FALSE
   )
-  matrix(as.numeric(v), win$w, win$h)
+  v <- as.numeric(v)
+  nodata <- img$src$nodata[match(channel, img$channels)]
+  if (!is.na(nodata)) v[is.na(v)] <- nodata
+  matrix(v, win$w, win$h)
 }
 
 ## The whole image as an x by y by channel array.
