@@ -35,20 +35,25 @@ Changes in version 1.15.1 (2026-10-14):
 + normalizeCells() stops when imageID is missing and a per-image method is
   requested (#16, #22), and works with a single marker.
 + Faster segmentation with lower memory use: each image is processed once in
-  one task, on plain arrays, with fitted values from one QR fit. Masks are
-  unchanged.
+  one task, on plain arrays, with fitted values from one QR fit.
 + Parallel processing starts the BiocParallel workers once per call, runs
   BLAS with one thread per worker, and gives every image its own random
   number stream, so masks do not depend on the number of cores.
-+ New simpleSegFile() segments a large image stored as a TIFF file
-  (OME-TIFF, QPTIFF or multi-page TIFF) tile by tile without reading it into
-  memory, and returns the cells, with the mean intensity of every channel, as
-  a SpatialExperiment. Its cells are those of simpleSeg() on the whole image.
++ simpleSeg() reads images from files: multi-channel files (OME-TIFF,
+  QPTIFF, multi-page TIFF), folders of single-channel files (one image split
+  by marker) and folders of such folders.
++ New argument output: "masks", "cells" (a SpatialExperiment with the mean
+  intensity of every channel, area and centroid of each cell, as from
+  cytomapper::measureObjects()) or "none"; maskDir saves the masks as TIFF
+  files. Paths return cells by default, images in R return masks.
++ Images larger than tileSize are segmented tile by tile without reading them
+  into memory; the cells and masks are those of the whole image.
 + Gaussian smoothing is done in C++ (faster, and much less memory than the
   FFT used before; values agree to about 1e-13).
 + Pixels of equal height are separated by a tiny amount (1e-6 of the
   tolerance) depending on their position before the watershed, so masks no
   longer depend on how ties are ordered. Masks from watershed = "distance",
   where most pixels are tied, and from transform "norm99" change slightly.
++ PCA uses the markers that vary over the pixels it is fitted on.
 + spatstat.geom and grDevices are no longer imported; terra is suggested
-  (for simpleSegFile()) rather than imported.
+  (for reading files) rather than imported.
